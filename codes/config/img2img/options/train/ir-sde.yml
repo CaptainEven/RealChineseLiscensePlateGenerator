@@ -1,0 +1,84 @@
+#### general settings
+name: ir-sde
+use_tb_logger: true
+model: denoising
+distortion: multi_degerations
+gpu_ids: [1]
+
+sde:
+  max_sigma: 10
+  T: 100
+  schedule: cosine # linear, cosine
+  eps: 0.005
+
+degradation: # for some synthetic dataset that only have GTs
+  # for denoising
+  sigma: 25
+  noise_type: G # Gaussian noise: G
+
+  # for super-resolution
+  scale: 4
+  
+#### datasets
+datasets:
+  train:
+    name: Train_Dataset
+    mode: LQGT
+    dataroot_GT: ../../../../img2img/HQ  # GT
+    dataroot_LQ: ../../../../img2img/LQ
+
+    use_shuffle: true
+    n_workers: 0  # per GPU
+    batch_size: 12
+    GT_size: 192, 64
+    LR_size: 192, 64
+    use_flip: false
+    use_rot: false
+    color: RGB
+  val:
+    name: Val_Dataset
+    mode: LQGT
+    dataroot_GT: ../../../../img2img/val/HQ  # GT
+    dataroot_LQ: ../../../../img2img/val/LQ
+
+
+#### network structures
+network_G:
+  which_model_G: ConditionalUNet
+  setting:
+    in_nc: 3
+    out_nc: 3
+    nf: 64
+    depth: 4
+
+#### path
+path:
+  pretrain_model_G: ../../../weights/155000_G.pth
+  strict_load: true
+  resume_state: # ../../../states/155000.state
+
+#### training settings: learning rate scheme, loss
+train:
+  optimizer: Adam  # Adam, AdamW, Lion
+  lr_G: !!float 5e-5  # 1e-4
+  lr_scheme: TrueCosineAnnealingLR # MultiStepLR
+  beta1: 0.9
+  beta2: 0.99
+  niter: 700000
+  warmup_iter: -1  # no warm up
+  lr_steps: [10, 30, 60, 90]
+  lr_gamma: 0.5
+  eta_min: !!float 1e-7
+
+  # criterion
+  is_weighted: False
+  loss_type: l1  # l1
+  weight: 1.0
+
+  manual_seed: 0
+  val_freq: 5000  # !!float 5e3
+
+#### logger
+logger:
+  print_freq: 10
+  save_checkpoint_freq: !!float 5e3
