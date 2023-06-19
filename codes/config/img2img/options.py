@@ -122,6 +122,10 @@ class NoneDict(dict):
 
 # convert to NoneDict, which return None for missing key.
 def dict_to_nonedict(opt):
+    """
+    @param opt:
+    @return:
+    """
     if isinstance(opt, dict):
         new_opt = dict()
         for key, sub_opt in opt.items():

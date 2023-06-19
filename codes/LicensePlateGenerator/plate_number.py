@@ -19,8 +19,9 @@ digits = ['{}'.format(x + 1) for x in range(9)] + ['0']
 # 英文，没有I、O两个字符
 letters = [chr(x + ord('A')) for x in range(26) if not chr(x + ord('A')) in ['I', 'O']]
 
-#绿色车牌第三位和最后一位只能是
+# 绿色车牌第三位和最后一位只能是
 letters_green = [chr(x + ord('A')) for x in range(11) if not chr(x + ord('A')) in ['I', 'O']]
+
 
 # print('letters', digits + letters)
 
@@ -43,7 +44,7 @@ def generate_plate_number_blue(length=7):
 
     if length == 8:
         green_id = np.random.randint(2)
-        if green_id == 0:  #小新能源
+        if green_id == 0:  # 小新能源
             for i in range(length - 1):
                 if i == 0:
                     plate += random_select(letters)
@@ -126,7 +127,7 @@ def generate_plate_number_white_yj():
 
 def generate_plate_number_black_gangao():
     """
-    :return:
+    @return:
     """
     plate = generate_plate_number_blue()
     return '粤' + plate[1:6] + random_select(["港", "澳"])
@@ -177,7 +178,7 @@ def letter_box(img,
 
     # new_shape = [width, height]
     new_shape = (round(shape[1] * ratio), round(shape[0] * ratio))  # keep aspect ratio
-    dw = (width - new_shape[0])  * 0.5  # width padding
+    dw = (width - new_shape[0]) * 0.5  # width padding
     dh = (height - new_shape[1]) * 0.5  # height padding
     top, bottom = round(dh - 0.1), round(dh + 0.1)
     left, right = round(dw - 0.1), round(dw + 0.1)

@@ -53,14 +53,14 @@ network_G:
 
 #### path
 path:
-  pretrain_model_G: ../../../weights/155000_G.pth
+  pretrain_model_G: ../../../weights/375000_G.pth
   strict_load: true
-  resume_state: # ../../../states/155000.state
+  resume_state: ../../../states/375000.state
 
 #### training settings: learning rate scheme, loss
 train:
   optimizer: Adam  # Adam, AdamW, Lion
-  lr_G: !!float 5e-5  # 1e-4
+  lr_G: !!float 4e-5  # 1e-4
   lr_scheme: TrueCosineAnnealingLR # MultiStepLR
   beta1: 0.9
   beta2: 0.99

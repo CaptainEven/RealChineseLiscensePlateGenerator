@@ -120,20 +120,27 @@ class LQGTDataset(data.Dataset):
                 H_s, W_s, _ = img_GT.shape
 
                 def _mod(n, random_scale, scale, thres):
+                    """
+                    @param n:
+                    @param random_scale:
+                    @param scale:
+                    @param thres:
+                    @return:
+                    """
                     rlt = int(n * random_scale)
                     rlt = (rlt // scale) * scale
                     return thres if rlt < thres else rlt
 
                 H_s = _mod(H_s, random_scale, scale, GT_size)
                 W_s = _mod(W_s, random_scale, scale, GT_size)
-                img_GT = cv2.resize(
-                    np.copy(img_GT), (W_s, H_s), interpolation=cv2.INTER_LINEAR
-                )
+                img_GT = cv2.resize(np.copy(img_GT), (W_s, H_s), interpolation=cv2.INTER_LINEAR)
+
                 # force to 3 channels
                 if img_GT.ndim == 2:
                     img_GT = cv2.cvtColor(img_GT, cv2.COLOR_GRAY2BGR)
 
             H, W, _ = img_GT.shape
+
             # using matlab imresize
             img_LR = util.imresize(img_GT, 1 / scale, True)
             if img_LR.ndim == 2:
@@ -192,12 +199,8 @@ class LQGTDataset(data.Dataset):
         if img_GT.shape[2] == 3:
             img_GT = img_GT[:, :, [2, 1, 0]]
             img_LR = img_LR[:, :, [2, 1, 0]]
-        img_GT = torch.from_numpy(
-            np.ascontiguousarray(np.transpose(img_GT, (2, 0, 1)))
-        ).float()
-        img_LR = torch.from_numpy(
-            np.ascontiguousarray(np.transpose(img_LR, (2, 0, 1)))
-        ).float()
+        img_GT = torch.from_numpy(np.ascontiguousarray(np.transpose(img_GT, (2, 0, 1)))).float()
+        img_LR = torch.from_numpy(np.ascontiguousarray(np.transpose(img_LR, (2, 0, 1)))).float()
 
         if LR_path is None:
             LR_path = GT_path

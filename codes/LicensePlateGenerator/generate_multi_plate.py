@@ -9,7 +9,9 @@ from glob import glob
 import cv2
 import numpy as np
 
-sys.path.append('.')
+path_to_be_inserted = os.path.abspath("../..")
+sys.path.insert(0, path_to_be_inserted)
+print("--> path_to_be_inserted: {:s}".format(path_to_be_inserted))
 
 from LicensePlateGenerator.plate_number import generate_plate_number_black_gangao, \
     generate_plate_number_black_shi, \
@@ -432,8 +434,6 @@ class MultiPlateGenerator:
             bg_color = 'green_car'
         elif bg_color == "greenBus":
             bg_color = "green_truck"
-        elif bg_color == "green-bus":
-            bg_color = "green_truck"
         elif bg_color == 'whitearmy':
             bg_color = 'white_army'
 
@@ -469,8 +469,10 @@ class MultiPlateGenerator:
                 plate_model_name = '{}_{}.PNG'.format(bg_color, height)
 
         plate_model_path = self.adr_plate_model + '/' + plate_model_name
+        plate_model_path = os.path.abspath(plate_model_path)
         if not os.path.isfile(plate_model_path):
-            print('[Warning]: invalid plate model path: {:s}.'.format(plate_model_path))
+            print('[Warning]: invalid plate model path: {:s}.'
+                  .format(plate_model_path))
             return None
 
         img_plate_model = cv2.imread(plate_model_path)

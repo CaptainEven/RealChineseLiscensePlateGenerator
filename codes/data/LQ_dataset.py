@@ -22,6 +22,9 @@ class LQDataset(data.Dataset):
     """
 
     def __init__(self, opt):
+        """
+        @param opt:
+        """
         super().__init__()
         self.opt = opt
         self.LQ_paths = None
@@ -30,7 +33,8 @@ class LQDataset(data.Dataset):
 
         # read image list from lmdb or image files
         if opt["data_type"] == "lmdb":
-            self.LQ_paths, self.LR_sizes = util.get_image_paths(opt["data_type"], opt["dataroot_LQ"])
+            self.LQ_paths = util.get_image_paths(opt["data_type"])
+            self.LR_sizes = util.get_image_paths(opt["data_type"], opt["dataroot_LQ"])
         elif opt["data_type"] == "img":
             self.LQ_paths = util.get_image_paths(opt["data_type"], opt["dataroot_LQ"])  # LR list
         else:
@@ -77,7 +81,6 @@ class LQDataset(data.Dataset):
 
         if self.opt["phase"] == "train":
             H, W, C = img_LR.shape
-
             rnd_h = random.randint(0, max(0, H - LR_size))
             rnd_w = random.randint(0, max(0, W - LR_size))
             img_LR = img_LR[rnd_h: rnd_h + LR_size, rnd_w: rnd_w + LR_size, :]

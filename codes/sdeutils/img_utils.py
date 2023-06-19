@@ -164,6 +164,12 @@ def tensor2img(tensor, out_type=np.uint8, min_max=(0, 1)):
 
 
 def save_img(img, img_path, mode="RGB"):
+    """
+    @param img:
+    @param img_path:
+    @param mode:
+    @return:
+    """
     cv2.imwrite(img_path, img)
 
 

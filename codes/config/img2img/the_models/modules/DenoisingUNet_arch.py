@@ -83,7 +83,12 @@ class ConditionalUNet(nn.Module):
         return x
 
     def forward(self, xt, cond, time):
-
+        """
+        @param xt:
+        @param cond:
+        @param time:
+        @return:
+        """
         if isinstance(time, int) or isinstance(time, float):
             time = torch.tensor([time]).to(xt.device)
         

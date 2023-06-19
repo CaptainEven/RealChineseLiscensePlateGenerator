@@ -98,17 +98,13 @@ from LicensePlateGenerator.generate_multi_plate import MultiPlateGenerator
 
 ##################################指定字符串、颜色、单双层生成车牌##############################
 
-def generate_one_plate(generator,
-                       plate_number,
-                       bg_color,
-                       double,
-                       save_path):
+def generate_one_plate(generator, plate_number, bg_color, double, final_path):
     """
     @param generator:
     @param plate_number:
     @param bg_color:
     @param double:
-    @param save_path:
+    @param final_path:
     @return:
     """
     if double == 0:
@@ -116,55 +112,9 @@ def generate_one_plate(generator,
     else:
         img_name = str(plate_number) + "_" + str(bg_color) + "_double"
     img = generator.generate_plate_special(plate_number, bg_color, double)
-    save_path = os.path.join(save_path, img_name + ".jpg")
-    cv2.imwrite(save_path, img)
-    print("--> {:s} saved".format(save_path))
-
-
-# def gen_LQs(HQ_dir, LQ_dir):
-#     """
-#     @param HQ_dir:
-#     @param LQ_dir:
-#     @return:
-#     """
-#     HQ_dir = os.path.abspath(HQ_dir)
-#     if not os.path.isdir(HQ_dir):
-#         print("[Info]: invalid real(HQ) license plate image dir:"
-#               .format(HQ_dir))
-#         exit(-1)
-#     LQ_dir = os.path.abspath(LQ_dir)
-#     if not os.path.abspath(LQ_dir):
-#         os.makedirs(LQ_dir)
-#         print("[Info]: {:s} made".format(LQ_dir))
-#
-#     img_paths = []
-#     find_files(HQ_dir, img_paths, ".jpg")
-#     generator = MultiPlateGenerator('plate_model', 'font_model')
-#
-#     for img_path in img_paths:
-#         img_name = os.path.split(img_path)[-1]
-#         fields = img_name[:-4].split("_")
-#         plate_number = fields[0]
-#         bg_color = fields[1]
-#         double = fields[2]
-#
-#         if bg_color == "green":
-#             bg_color = "green_car"
-#
-#         if bg_color == "greenBus":
-#             bg_color = "green_truck"
-#
-#         if double == "double":
-#             double = 1
-#         else:
-#             double = 0
-#
-#         lq_path = LQ_dir + "/{:s}".format(img_name)
-#         generate_one_plate(generator,
-#                            plate_number,
-#                            bg_color,
-#                            double,
-#                            lq_path)
+    final_path = os.path.join(final_path, img_name + ".jpg")
+    print(final_path)
+    cv2.imwrite(final_path, img)
 
 
 if __name__ == '__main__':
@@ -173,8 +123,4 @@ if __name__ == '__main__':
     double = 0
     generator = MultiPlateGenerator('plate_model', 'font_model')
     final_path = "/users/sunshangyun/data/"
-    generate_one_plate(generator,
-                       plate_number,
-                       bg_color,
-                       double,
-                       final_path)
+    generate_one_plate(generator, plate_number, bg_color, double, final_path)

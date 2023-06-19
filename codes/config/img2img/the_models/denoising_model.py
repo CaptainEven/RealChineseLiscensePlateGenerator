@@ -159,12 +159,9 @@ class DenoisingModel(BaseModel):
         @return:
         """
         sde.set_mu(self.condition)
-
         self.model.eval()
-
         with torch.no_grad():
             self.output = sde.reverse_sde(self.state, save_states=save_states)
-
         self.model.train()
 
     def get_current_log(self):
@@ -186,21 +183,18 @@ class DenoisingModel(BaseModel):
         return out_dict
 
     def print_network(self):
+        """
+        @return:
+        """
         s, n = self.get_network_description(self.model)
-        if isinstance(self.model, nn.DataParallel) or isinstance(
-                self.model, DistributedDataParallel
-        ):
-            net_struc_str = "{} - {}".format(
-                self.model.__class__.__name__, self.model.module.__class__.__name__
-            )
+        if isinstance(self.model, nn.DataParallel) or isinstance(self.model, DistributedDataParallel):
+            net_struc_str = "{} - {}" \
+                .format(self.model.__class__.__name__, self.model.module.__class__.__name__)
         else:
             net_struc_str = "{}".format(self.model.__class__.__name__)
         if self.rank <= 0:
-            logger.info(
-                "Network G structure: {}, with parameters: {:,d}".format(
-                    net_struc_str, n
-                )
-            )
+            logger.info("Network G structure: {}, with parameters: {:,d}"
+                        .format(net_struc_str, n))
             logger.info(s)
 
     def load(self):

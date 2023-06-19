@@ -1,4 +1,4 @@
-name: ir-sde
+name: img_translate
 suffix: ~  # add suffix to saved images
 model: denoising
 distortion: multi_degerations
@@ -36,4 +36,4 @@ network_G:
 
 #### path
 path:
-  pretrain_model_G: ../../../weights/85000_G.pth
+  pretrain_model_G: ../../../weights/10000_G.pth

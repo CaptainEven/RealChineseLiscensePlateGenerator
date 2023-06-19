@@ -12,12 +12,21 @@ from tqdm import tqdm
 
 class SDE(abc.ABC):
     def __init__(self, T, device=None):
+        """
+        @param T:
+        @param device:
+        """
         self.T = T
         self.dt = 1 / T
         self.device = device
 
     @abc.abstractmethod
     def drift(self, x, t):
+        """
+        @param x:
+        @param t:
+        @return:
+        """
         pass
 
     @abc.abstractmethod
@@ -110,37 +119,40 @@ class IRSDE(SDE):
         @param eps:
         @return:
         """
-        def constant_theta_schedule(timesteps, v=1.):
+
+        def constant_theta_schedule(time_steps, v=1.0):
             """
             constant schedule
             """
             print('constant schedule')
-            timesteps = timesteps + 1  # T from 1 to 100
-            return torch.ones(timesteps, dtype=torch.float32)
+            time_steps = time_steps + 1  # T from 1 to 100
+            return torch.ones(time_steps, dtype=torch.float32)
 
-        def linear_theta_schedule(timesteps):
+        def linear_theta_schedule(time_steps):
             """
             linear schedule
+            @param time_steps:
+            @return:
             """
             print('linear schedule')
-            timesteps = timesteps + 1  # T from 1 to 100
-            scale = 1000 / timesteps
+            time_steps = time_steps + 1  # T from 1 to 100
+            scale = 1000 / time_steps
             beta_start = scale * 0.0001
             beta_end = scale * 0.02
-            return torch.linspace(beta_start, beta_end, timesteps, dtype=torch.float32)
+            return torch.linspace(beta_start, beta_end, time_steps, dtype=torch.float32)
 
-        def cosine_theta_schedule(timesteps, s=0.008):
+        def cosine_theta_schedule(time_steps, s=0.008):
             """
             cosine schedule
-            @param timesteps:
+            @param time_steps:
             @param s:
             @return:
             """
             print('cosine schedule')
-            timesteps = timesteps + 2  # for truncating from 1 to -1
-            steps = timesteps + 1
-            x = torch.linspace(0, timesteps, steps, dtype=torch.float32)
-            alphas_cumprod = torch.cos(((x / timesteps) + s) / (1 + s) * math.pi * 0.5) ** 2
+            time_steps = time_steps + 2  # for truncating from 1 to -1
+            steps = time_steps + 1
+            x = torch.linspace(0, time_steps, steps, dtype=torch.float32)
+            alphas_cumprod = torch.cos(((x / time_steps) + s) / (1 + s) * math.pi * 0.5) ** 2
             alphas_cumprod = alphas_cumprod / alphas_cumprod[0]
             betas = 1 - alphas_cumprod[1:-1]
             return betas
@@ -203,29 +215,69 @@ class IRSDE(SDE):
         self.model = model
 
     #####################################
-
     def mu_bar(self, x0, t):
+        """
+        @param x0:
+        @param t:
+        @return:
+        """
         return self.mu + (x0 - self.mu) * torch.exp(-self.thetas_cumsum[t] * self.dt)
 
     def sigma_bar(self, t):
+        """
+        @param t:
+        @return:
+        """
         return self.sigma_bars[t]
 
     def drift(self, x, t):
+        """
+        @param x:
+        @param t:
+        @return:
+        """
         return self.thetas[t] * (self.mu - x) * self.dt
 
     def sde_reverse_drift(self, x, score, t):
+        """
+        @param x:
+        @param score:
+        @param t:
+        @return:
+        """
         return (self.thetas[t] * (self.mu - x) - self.sigmas[t] ** 2 * score) * self.dt
 
     def ode_reverse_drift(self, x, score, t):
+        """
+        @param x:
+        @param score:
+        @param t:
+        @return:
+        """
         return (self.thetas[t] * (self.mu - x) - 0.5 * self.sigmas[t] ** 2 * score) * self.dt
 
     def dispersion(self, x, t):
+        """
+        @param x:
+        @param t:
+        @return:
+        """
         return self.sigmas[t] * (torch.randn_like(x) * math.sqrt(self.dt)).to(self.device)
 
     def get_score_from_noise(self, noise, t):
+        """
+        @param noise:
+        @param t:
+        @return:
+        """
         return -noise / self.sigma_bar(t)
 
     def score_fn(self, x, t):
+        """
+        @param x:
+        @param t:
+        @return:
+        """
         # need to pre-set mu and score_model
         noise = self.model(x, self.mu, t)
         return self.get_score_from_noise(noise, t)
@@ -241,6 +293,12 @@ class IRSDE(SDE):
 
     # optimum x_{t-1}
     def reverse_optimum_step(self, xt, x0, t):
+        """
+        @param xt:
+        @param x0:
+        @param t:
+        @return:
+        """
         A = torch.exp(-self.thetas[t] * self.dt)
         B = torch.exp(-self.thetas_cumsum[t] * self.dt)
         C = torch.exp(-self.thetas_cumsum[t - 1] * self.dt)
@@ -251,15 +309,35 @@ class IRSDE(SDE):
         return term1 * (xt - self.mu) + term2 * (x0 - self.mu) + self.mu
 
     def sigma(self, t):
+        """
+        @param t:
+        @return:
+        """
         return self.sigmas[t]
 
     def theta(self, t):
+        """
+        @param t:
+        @return:
+        """
         return self.thetas[t]
 
     def get_real_noise(self, xt, x0, t):
+        """
+        @param xt:
+        @param x0:
+        @param t:
+        @return:
+        """
         return (xt - self.mu_bar(x0, t)) / self.sigma_bar(t)
 
     def get_real_score(self, xt, x0, t):
+        """
+        @param xt:
+        @param x0:
+        @param t:
+        @return:
+        """
         return -(xt - self.mu_bar(x0, t)) / self.sigma_bar(t) ** 2
 
     # forward process to get x(T) from x(0)
@@ -279,6 +357,13 @@ class IRSDE(SDE):
         return x
 
     def reverse_sde(self, xt, T=-1, save_states=False, save_dir='sde_state'):
+        """
+        @param xt:
+        @param T:
+        @param save_states:
+        @param save_dir:
+        @return:
+        """
         T = self.T if T < 0 else T
         x = xt.clone()
         for t in tqdm(reversed(range(1, T + 1))):
@@ -295,6 +380,13 @@ class IRSDE(SDE):
         return x
 
     def reverse_ode(self, xt, T=-1, save_states=False, save_dir='ode_state'):
+        """
+        @param xt:
+        @param T:
+        @param save_states:
+        @param save_dir:
+        @return:
+        """
         T = self.T if T < 0 else T
         x = xt.clone()
         for t in tqdm(reversed(range(1, T + 1))):
@@ -312,6 +404,14 @@ class IRSDE(SDE):
 
     # sample ode using Black-box ODE solver (not used)
     def ode_sampler(self, xt, rtol=1e-5, atol=1e-5, method='RK45', eps=1e-3, ):
+        """
+        @param xt:
+        @param rtol:
+        @param atol:
+        @param method:
+        @param eps:
+        @return:
+        """
         shape = xt.shape
 
         def to_flattened_numpy(x):
@@ -352,6 +452,11 @@ class IRSDE(SDE):
 
     # sample states for training
     def generate_random_states(self, x0, mu):
+        """
+        @param x0:
+        @param mu:
+        @return:
+        """
         x0 = x0.to(self.device)
         mu = mu.to(self.device)
 
@@ -369,6 +474,10 @@ class IRSDE(SDE):
         return timesteps, noisy_states.to(torch.float32)
 
     def noise_state(self, tensor):
+        """
+        @param tensor:
+        @return:
+        """
         return tensor + torch.randn_like(tensor) * self.max_sigma
 
 

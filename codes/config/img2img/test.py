@@ -102,8 +102,8 @@ for test_loader in test_loaders:
         #### input dataset_LQ
         LQ, GT = test_data["LQ"], test_data["GT"]
         noisy_state = sde.noise_state(LQ)
-
         model.feed_data(noisy_state, LQ, GT)
+
         tic = time.time()
         model.test(sde, save_states=True)
         toc = time.time()
