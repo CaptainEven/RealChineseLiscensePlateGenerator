@@ -402,5 +402,5 @@ def test_text2img(args, model, sde):
 
 if __name__ == "__main__":
     test_text2img(args, model, sde)
-    viz_txt2img_set(src_dir="../results/img2img/img_translate",
+    viz_txt2img_set(src_dir="../../../results/img2img/img_translate",
                     viz_dir="/mnt/diske/vis_plate_gen_5")
