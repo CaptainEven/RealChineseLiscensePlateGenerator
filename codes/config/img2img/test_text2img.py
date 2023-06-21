@@ -252,7 +252,9 @@ def text2img(txt, model, generator, dataset_dir, n_gen=10):
     LQ = generator.generate_plate_special(plate_number=plate_number,
                                           bg_color=plate_color,
                                           is_double=is_double)
-    # cv2.imwrite("/mnt/diske/{:s}.png".format(plate_number), LQ)
+    model_img_path = "/mnt/diske/{:s}.png".format(plate_number)
+    cv2.imwrite(model_img_path, LQ)
+    print("[Info]: {:s} saved".format(model_img_path))
 
     # ---------- Generate HQ img
     if plate_layers == "single":
