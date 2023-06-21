@@ -242,7 +242,7 @@ def main():
             if current_step % opt["logger"]["print_freq"] == 0:
                 log_dict = model.get_current_log()
                 message = "Epoch:{:3d} | iter:{:6,d}/{:6,d} | total_iter:{:8,d} | lr:{:.2e} " \
-                    .format(epoch,
+                    .format(epoch + 1,
                             iter_i + 1, len(train_loader),
                             current_step,
                             model.get_current_learning_rate())

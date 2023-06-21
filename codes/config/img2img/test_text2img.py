@@ -3,6 +3,7 @@
 import argparse
 import logging
 import os.path
+import shutil
 import sys
 import time
 from collections import OrderedDict
@@ -298,6 +299,8 @@ def test_text2img(args, model, sde):
     test_set_name = test_loader.dataset.opt["name"]
     dataset_dir = os.path.join(opt["path"]["results_root"], test_set_name)
     dataset_dir = os.path.abspath(dataset_dir)
+    if os.path.isdir(dataset_dir):
+        shutil.rmtree(dataset_dir)
     util.mkdir(dataset_dir)
 
     # ---------- Define a generator
@@ -311,11 +314,13 @@ def test_text2img(args, model, sde):
         print("[Info]: generation from file list...")
         list_file_path = os.path.abspath(args.list_file)
         if not os.path.isfile(list_file_path):
-            print("[Err]: ")
+            print("[Err]: invalid list file: {:s}"
+                  .format(list_file_path))
             exit(-1)
         with open(list_file_path, "r", encoding="utf-8") as f:
             for line in f.readlines():
                 text = line.strip()
+                print("--> generating {:s}...".format(text))
                 text2img(text, model, generator, dataset_dir, n_gen=10)
 
 

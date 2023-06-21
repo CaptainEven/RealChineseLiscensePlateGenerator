@@ -660,6 +660,31 @@ def gen_val_set(data_root, ratio=0.005):
     print("[Info]: total {:d} samples".format(cnt))
 
 
+def cvt_png_to_jpg(src_dir):
+    """
+    :param src_dir:
+    :return:
+    """
+    src_dir = os.path.abspath(src_dir)
+    if not os.path.isdir(src_dir):
+        print("[Err]: invalid src dir: {:s}".format(src_dir))
+        exit(-1)
+    print("[Info]: src dir: {:s}".format(src_dir))
+
+    png_file_paths = []
+    find_files(src_dir, png_file_paths, ".png")
+    print("[Info]: find {:d} png files".format(len(png_file_paths)))
+
+    for png_f_path in png_file_paths:
+        img = cv2.imdecode(np.fromfile(png_f_path, dtype=np.uint8), cv2.IMREAD_COLOR)
+        if img is None:
+            continue
+        jpg_f_path = png_f_path.replace(".png", ".jpg")
+        cv2.imencode(".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), 100])[1].tofile(jpg_f_path)
+        # cv2.imwrite("output2.jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), 100])  # 无损
+        print("--> {:s} written".format(jpg_f_path))
+
+
 def gen_lost_LQs(root_dir, ext=".jpg"):
     """
     @param root_dir:
@@ -752,7 +777,7 @@ def gen_lost_LQs(root_dir, ext=".jpg"):
                     print("[Err]: lq_path: {:s}".format(lq_path))
                     progress_bar.update()
                     continue
-                print("--> LQ img {:s} generated @ {:s}\n"
+                print("\n--> LQ img {:s} generated @ {:s}\n"
                       .format(hq_name, LQ_dir))
                 progress_bar.update()
 
@@ -931,9 +956,10 @@ def viz_txt2img_set(src_dir, viz_dir, ext=".png"):
         exit(-1)
 
     viz_dir = os.path.abspath(viz_dir)
-    if not os.path.isdir(viz_dir):
-        os.makedirs(viz_dir)
-        print("[Info]: {:s} made".format(viz_dir))
+    if os.path.isdir(viz_dir):
+        shutil.rmtree(viz_dir)
+    os.makedirs(viz_dir)
+    print("[Info]: {:s} made".format(viz_dir))
 
     all_img_paths = []
     find_files(src_dir, all_img_paths, ext)
@@ -983,6 +1009,8 @@ if __name__ == "__main__":
 
     # gen_lost_LQs(root_dir="../../../img2img")
 
+    # cvt_png_to_jpg(src_dir="../../../img2img/HQ")
+
     # unify_HQ_LQ_imgsize(root_dir="../../../img2img")
 
     # gen_val_set(data_root="../../../img2img/",
@@ -997,6 +1025,6 @@ if __name__ == "__main__":
     #                            test_root="../../../img2img/val")
 
     viz_txt2img_set(src_dir="../../results/img2img/img_translate",
-                    viz_dir="/mnt/diske/vis_plate_gen_4")
+                    viz_dir="/mnt/diske/vis_plate_gen_5")
 
     print("--> Done.")

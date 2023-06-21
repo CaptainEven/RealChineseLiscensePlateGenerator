@@ -204,7 +204,9 @@ class DenoisingModel(BaseModel):
         load_path_G = self.opt["path"]["pretrain_model_G"]
         load_path_G = os.path.abspath(load_path_G)
         if load_path_G is not None:
-            logger.info("Loading model for G [{:s}] ...".format(load_path_G))
+            log_str = "Loading model for G [{:s}] ...".format(load_path_G)
+            print(log_str)
+            logger.info(log_str)
             self.load_network(load_path_G, self.model, self.opt["path"]["strict_load"])
 
     def save(self, iter_label):
