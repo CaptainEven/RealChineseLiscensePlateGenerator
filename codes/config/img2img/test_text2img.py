@@ -394,9 +394,12 @@ def test_text2img(args, model, sde):
             n_files = len(f.readlines())
         print("\n[Info]: total {:d} files to be generated".format(n_files))
         with open(list_file_path, "r", encoding="utf-8") as f:
+            file_i = 0
             for line in f.readlines():
+                file_i += 1
                 text = line.strip()
-                print("\n--> generating {:s}...\n".format(text))
+                print("\n--> generating {:s} {:d}/{:d}...\n"
+                      .format(text, file_i, n_files))
                 text2img(text, model, generator, dataset_dir, n_gen=10)
 
 
