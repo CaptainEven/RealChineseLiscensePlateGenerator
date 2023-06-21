@@ -233,6 +233,74 @@ def run_test_set():
         print(f"average test time: {np.mean(test_times):.4f}")
 
 
+def find_files(root, f_list, ext):
+    """
+    Find all files with an extension
+    Args:
+        root:
+        f_list:
+        ext:
+    Returns:
+    """
+    for f_name in os.listdir(root):
+        f_path = os.path.join(root, f_name)
+        if os.path.isfile(f_path) and f_name.endswith(ext):
+            f_list.append(f_path)
+        elif os.path.isdir(f_path):
+            find_files(f_path, f_list, ext)
+
+
+def viz_txt2img_set(src_dir, viz_dir, ext=".png"):
+    """
+    @param src_dir:
+    @param viz_dir:
+    @param ext:
+    @return:
+    """
+    src_dir = os.path.abspath(src_dir)
+    if not os.path.isdir(src_dir):
+        print("[Err]: invalid src dir: {:s}".format(src_dir))
+        exit(-1)
+
+    viz_dir = os.path.abspath(viz_dir)
+    if os.path.isdir(viz_dir):
+        shutil.rmtree(viz_dir)
+    os.makedirs(viz_dir)
+    print("[Info]: {:s} made".format(viz_dir))
+
+    all_img_paths = []
+    find_files(src_dir, all_img_paths, ext)
+
+    img_set = set()
+    for img_path in all_img_paths:
+        if not os.path.isfile(img_path):
+            print("[Warning]: {:s} not exist!")
+            continue
+
+        img_name = os.path.split(img_path)[-1]
+        fields = img_name.split("_")
+        assert len(fields) > 3
+        img_set.add("_".join(fields[:-1]))
+    print("[Info]: total {:d} img sets to be visualized"
+          .format(len(img_set)))
+
+    for unique_img_name in img_set:
+        unique_img_paths = [x for x in all_img_paths if unique_img_name in x]
+        img = cv2.imread(unique_img_paths[0], cv2.IMREAD_COLOR)
+        h, w, c = img.shape
+
+        img_burst = np.zeros((h * len(unique_img_paths), w, c), dtype=img.dtype)
+        for img_i, img_path in enumerate(unique_img_paths):
+            if img_i == 0:
+                img_burst[:h, :, :] = img
+            else:
+                img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+                img_burst[img_i * h:(img_i + 1) * h, :, :] = img
+        viz_path = viz_dir + "/" + unique_img_name + ext
+        cv2.imwrite(viz_path, img_burst)
+        print("--> {:s} saved".format(viz_path))
+
+
 def text2img(txt, model, generator, dataset_dir, n_gen=10):
     """
     @param txt:
@@ -334,3 +402,5 @@ def test_text2img(args, model, sde):
 
 if __name__ == "__main__":
     test_text2img(args, model, sde)
+    viz_txt2img_set(src_dir="../results/img2img/img_translate",
+                    viz_dir="/mnt/diske/vis_plate_gen_5")
