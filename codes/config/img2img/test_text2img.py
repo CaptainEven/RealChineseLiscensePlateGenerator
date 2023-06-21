@@ -13,6 +13,7 @@ import numpy as np
 import torch
 from IPython import embed
 import lpips
+from tqdm import tqdm
 
 import options as option
 from the_models import create_model
@@ -254,7 +255,7 @@ def text2img(txt, model, generator, dataset_dir, n_gen=10):
                                           is_double=is_double)
     model_img_path = "/mnt/diske/{:s}.png".format(plate_number)
     cv2.imwrite(model_img_path, LQ)
-    print("[Info]: {:s} saved".format(model_img_path))
+    print("[Info]: model image(LQ) {:s} saved".format(model_img_path))
 
     # ---------- Generate HQ img
     if plate_layers == "single":
@@ -319,10 +320,15 @@ def test_text2img(args, model, sde):
             print("[Err]: invalid list file: {:s}"
                   .format(list_file_path))
             exit(-1)
+
+        n_files = 0
+        with open(list_file_path, "r", encoding="utf-8") as f:
+            n_files = len(f.readlines())
+        print("\n[Info]: total {:d} files to be generated".format(n_files))
         with open(list_file_path, "r", encoding="utf-8") as f:
             for line in f.readlines():
                 text = line.strip()
-                print("--> generating {:s}...".format(text))
+                print("\n--> generating {:s}...\n".format(text))
                 text2img(text, model, generator, dataset_dir, n_gen=10)
 
 
