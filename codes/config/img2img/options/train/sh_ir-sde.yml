@@ -29,7 +29,7 @@ datasets:
 
     use_shuffle: true
     n_workers: 0  # per GPU
-    batch_size: 12
+    batch_size: 14  # 12
     GT_size: 192, 64
     LR_size: 192, 64
     use_flip: false
@@ -53,14 +53,14 @@ network_G:
 
 #### path
 path:
-  pretrain_model_G: ../weights/5000_G.pth
+  pretrain_model_G: ../weights/455000_G.pth
   strict_load: true
-  resume_state: # ../states/375000.state
+  resume_state: # ../states/455000.state
 
 #### training settings: learning rate scheme, loss
 train:
   optimizer: Adam  # Adam, AdamW, Lion
-  lr_G: !!float 4e-5  # 1e-4
+  lr_G: !!float 3e-5  # 1e-4
   lr_scheme: TrueCosineAnnealingLR # MultiStepLR
   beta1: 0.9
   beta2: 0.99

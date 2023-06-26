@@ -398,7 +398,7 @@ def test_text2img(args, model, sde):
             for line in f.readlines():
                 file_i += 1
                 text = line.strip()
-                print("\n--> generating {:s} {:d}/{:d}...\n"
+                print("\n--> generating {:s}, ({:3d}/{:3d})...\n"
                       .format(text, file_i, n_files))
                 text2img(text, model, generator, dataset_dir, n_gen=10)
 
@@ -406,4 +406,4 @@ def test_text2img(args, model, sde):
 if __name__ == "__main__":
     test_text2img(args, model, sde)
     viz_txt2img_set(src_dir="../../../results/img2img/img_translate",
-                    viz_dir="/mnt/diske/vis_plate_gen_5")
+                    viz_dir="/mnt/diske/vis_plate_gen_7")

@@ -136,11 +136,17 @@ def setup_logger(logger_name,
 
 
 class ProgressBar(object):
-    """A progress bar which can print the progress
+    """
+    A progress bar which can print the progress
     modified from https://github.com/hellock/cvbase/blob/master/cvbase/progress.py
     """
 
     def __init__(self, task_num=0, bar_width=50, start=True):
+        """
+        @param task_num:
+        @param bar_width:
+        @param start:
+        """
         self.task_num = task_num
         max_bar_width = self._get_max_bar_width()
         self.bar_width = bar_width if bar_width <= max_bar_width else max_bar_width
@@ -149,17 +155,22 @@ class ProgressBar(object):
             self.start()
 
     def _get_max_bar_width(self):
+        """
+        @return:
+        """
         terminal_width, _ = get_terminal_size()
         max_bar_width = min(int(terminal_width * 0.6), terminal_width - 50)
         if max_bar_width < 10:
-            print(
-                "terminal width is too small ({}), please consider widen the terminal for better "
-                "progressbar visualization".format(terminal_width)
-            )
+            print("terminal width is too small ({}), please consider widen the terminal for better "
+                  "progressbar visualization"
+                  .format(terminal_width))
             max_bar_width = 10
         return max_bar_width
 
     def start(self):
+        """
+        @return:
+        """
         if self.task_num > 0:
             sys.stdout.write(
                 "[{}] 0/{}, elapsed: 0s, ETA:\n{}\n".format(
@@ -172,6 +183,10 @@ class ProgressBar(object):
         self.start_time = time.time()
 
     def update(self, msg="In progress..."):
+        """
+        @param msg:
+        @return:
+        """
         self.completed += 1
         elapsed = time.time() - self.start_time
         fps = self.completed / elapsed
@@ -184,23 +199,18 @@ class ProgressBar(object):
             sys.stdout.write(
                 "\033[J"
             )  # clean the output (remove extra chars since last display)
-            sys.stdout.write(
-                "[{}] {}/{}, {:.1f} task/s, elapsed: {}s, ETA: {:5}s\n{}\n".format(
-                    bar_chars,
-                    self.completed,
-                    self.task_num,
-                    fps,
-                    int(elapsed + 0.5),
-                    eta,
-                    msg,
-                )
-            )
+            sys.stdout.write("[{}] {}/{}, {:.1f} task/s, elapsed: {}s, ETA: {:5}s\n{}\n"
+                             .format(bar_chars,
+                                     self.completed,
+                                     self.task_num,
+                                     fps,
+                                     int(elapsed + 0.5),
+                                     eta,
+                                     msg, ))
         else:
             sys.stdout.write(
-                "completed: {}, elapsed: {}s, {:.1f} tasks/s".format(
-                    self.completed, int(elapsed + 0.5), fps
-                )
-            )
+                "completed: {}, elapsed: {}s, {:.1f} tasks/s"
+                    .format(self.completed, int(elapsed + 0.5), fps))
         sys.stdout.flush()
 
 
@@ -396,11 +406,14 @@ def gen_LQHQ(img_path_list_f,
                 plate_color = fields[1]
                 plate_layers = fields[2]
                 if '~' in plate_number \
-                        or len(plate_number) < 7 \
-                        or plate_layers == "double":
+                        or len(plate_number) < 7:
                     continue
-                if plate_color not in ["blue", "green", "yellow", "white", "black"]:
+                if plate_layers == "double":
+                    print("\n[Warning]: double license plate not supported now!\n")
                     continue
+
+                # if plate_color not in ["blue", "green", "yellow", "white", "black"]:
+                #     continue
                 if plate_color == "green" and len(plate_number) != 8:
                     continue
                 elif plate_color == "blue" and len(plate_number) != 7:
@@ -442,28 +455,37 @@ def gen_LQHQ(img_path_list_f,
 
                 lq_path = LQ_dir + "/{:s}".format(img_name)
                 lq_img = generator.generate_plate_special(plate_number, plate_color, plate_layers)
+                if lq_img is None:
+                    print("[Warning]: generate {:s} failed!"
+                          .format(img_name))
+                    continue
                 if plate_layers == 0:  # resize
                     lq_img = cv2.resize(lq_img, (192, 64), cv2.INTER_LINEAR)
                 cv2.imwrite(lq_path, lq_img)
                 # print("--> LQ img {:s} generated @ {:s}\n"
                 #       .format(img_name, LQ_dir))
 
-                print("--> LQ-HQ pair {:s} generated @ {:s}".format(img_name, parent_dir))
+                print("--> LQ-HQ pair {:s} generated @ {:s}"
+                      .format(img_name, parent_dir))
                 cnt += 1
 
                 # ----------
     print("--> total {:d} valid sample pairs generated".format(cnt))
 
 
-def augment_HQLQ_dataset(src_root, dst_root):
+def augment_HQLQ_dataset(src, dst_root):
     """
-    @param src_root: 
+    @param src: 
     @param dst_root: 
     @return: 
     """
-    src_root = os.path.abspath(src_root)
-    if not os.path.isdir(src_root):
-        print("[Err]: invalid src root: {:s}".format(src_root))
+    src = os.path.abspath(src)
+    if os.path.isdir(src):
+        print("[Info]: src dir: {:s}".format(src))
+    elif os.path.isfile(src):
+        print("[Info]: src file: {:s}".format(src))
+    else:
+        print("[Err]: invalid src: {:s}".format(src))
         exit(-1)
 
     dst_root = os.path.abspath(dst_root)
@@ -472,7 +494,19 @@ def augment_HQLQ_dataset(src_root, dst_root):
         exit(-1)
 
     src_img_paths = []
-    find_files(src_root, src_img_paths, ".jpg")
+    if os.path.isdir(src):
+        find_files(src, src_img_paths, ".jpg")
+    elif os.path.isfile(src):
+        if src.endswith(".txt"):
+            with open(src, "r", encoding="utf-8") as f:
+                for line in f.readlines():
+                    img_path = line.strip()
+                    if os.path.isfile(img_path):
+                        src_img_paths.append(img_path)
+        else:
+            print("[Err]: invalid file: {:s}, it should be a txt file!"
+                  .format(src))
+            exit(-1)
     print("[Info]: total {:d} img files found".format(len(src_img_paths)))
 
     # ---------- check dst root dir
@@ -487,75 +521,92 @@ def augment_HQLQ_dataset(src_root, dst_root):
     # ---------- define chinese license plate generator
     generator = MultiPlateGenerator('../LicensePlateGenerator/plate_model',
                                     '../LicensePlateGenerator/font_model')
+    with tqdm(total=len(src_img_paths)) as p_bar:
+        for img_path in src_img_paths:
+            img_name = os.path.split(img_path)[-1]
+            fields = img_name.split("_")
+            new_name = img_name[:]  # copy
 
-    for img_path in src_img_paths:
-        img_name = os.path.split(img_path)[-1]
-        fields = img_name.split("_")
-        new_name = img_name[:]  # copy
+            # ---------- Generate LQ img: ideal img
+            plate_number = fields[0]
+            plate_color = fields[1]
+            plate_layers = fields[2]
+            if '~' in plate_number \
+                    or len(plate_number) < 7 \
+                    or plate_layers == "double":
+                p_bar.update()
+                continue
+            # if plate_color not in ["blue", "green", "yellow", "white", "black"]:
+            #     continue
+            if plate_color == "green" and len(plate_number) != 8:
+                p_bar.update()
+                continue
+            elif plate_color == "blue" and len(plate_number) != 7:
+                p_bar.update()
+                continue
 
-        # ---------- Generate LQ img: ideal img
-        plate_number = fields[0]
-        plate_color = fields[1]
-        plate_layers = fields[2]
-        if '~' in plate_number \
-                or len(plate_number) < 7 \
-                or plate_layers == "double":
-            continue
-        if plate_color not in ["blue", "green", "yellow", "white", "black"]:
-            continue
-        if plate_color == "green" and len(plate_number) != 8:
-            continue
-        elif plate_color == "blue" and len(plate_number) != 7:
-            continue
+            lb = "_".join(fields)
+            if "fake" in lb:
+                print("\n[Warning]: found fake HQ img!\n")
+                p_bar.update()
+                continue
+            # print("--> label: {:s}".format(lb))
 
-        lb = "_".join(fields)
-        if "fake" in lb:
-            print("[Warning]: found fake HQ img!")
-            # continue
-        # print("--> label: {:s}".format(lb))
+            if plate_color == "green":
+                plate_color = "green_car"
 
-        if plate_color == "green":
-            plate_color = "green_car"
+            if plate_color == "greenBus":
+                plate_color = "green_truck"
 
-        if plate_color == "greenBus":
-            plate_color = "green_truck"
+            if plate_layers == "double":
+                plate_layers = 1
+            else:  # single
+                plate_layers = 0
 
-        if plate_layers == "double":
-            plate_layers = 1
-        else:  # single
-            plate_layers = 0
+            lq_path = dst_lq_dir + "/{:s}".format(new_name)
+            lq_img = generator.generate_plate_special(plate_number, plate_color, plate_layers)
+            if plate_layers == 0:  # resize
+                lq_img = cv2.resize(lq_img, (192, 64), cv2.INTER_LINEAR)
+            elif plate_layers == 1:
+                print("\n[Warning]: double license plate not supported now!\n")
+                p_bar.update()
+                continue
+            try:
+                cv2.imwrite(lq_path, lq_img)
+            except Exception as e:
+                print(e)
+                print("[Err]: lq_path: {:s}".format(lq_path))
+                p_bar.update()
+                continue
+            print("\n--> LQ img {:s} generated @ {:s}\n"
+                  .format(new_name, dst_lq_dir))
 
-        lq_path = dst_lq_dir + "/{:s}".format(new_name)
-        lq_img = generator.generate_plate_special(plate_number, plate_color, plate_layers)
-        if plate_layers == 0:  # resize
-            lq_img = cv2.resize(lq_img, (192, 64), cv2.INTER_LINEAR)
-        try:
-            cv2.imwrite(lq_path, lq_img)
-        except Exception as e:
-            print(e)
-            print("[Err]: lq_path: {:s}".format(lq_path))
-            continue
-        print("--> LQ img {:s} generated @ {:s}\n"
-              .format(new_name, dst_lq_dir))
-
-        # ----- Generate HQ img: real img
-        if new_name not in dst_hq_img_names:  # direct copy
-            shutil.copy(img_path, dst_hq_dir)
-            print("--> {:s} [cp to] {:s}".format(new_name, dst_hq_dir))
-        else:
-            if len(fields) > 3:  # need new name
-                new_id = int(fields[3][:-4]) + 1
-                fields[3] = str(new_id)
-                new_name = "_".join(fields)
+            # ----- Generate HQ img: real img
+            if new_name not in dst_hq_img_names:  # direct copy
+                shutil.copy(img_path, dst_hq_dir)
+                print("\n--> {:s} [cp to] {:s}\n".format(new_name, dst_hq_dir))
             else:
-                new_name = img_name[:-4] + "_1.jpg"
-            dst_path = dst_hq_dir + "/" + new_name
-            shutil.copyfile(img_path, dst_path)
-            print("--> {:s} rename to {:s} copy to {:s}"
-                  .format(img_name, new_name, dst_hq_dir))
+                if len(fields) > 3:  # need new name
+                    try:
+                        new_id = int(fields[3][:-4]) + 1
+                    except Exception as e:
+                        print("[Exception]: {:s}".format(new_name))
+                        print(e)
+                        p_bar.update()
+                        continue
 
-        print("--> LQ-HQ pair {:s} generated @ {:s}\n".format(new_name, dst_root))
-        cnt += 1
+                    fields[3] = str(new_id)
+                    new_name = "_".join(fields)
+                else:
+                    new_name = img_name[:-4] + "_1.jpg"
+                dst_path = dst_hq_dir + "/" + new_name
+                shutil.copyfile(img_path, dst_path)
+                print("\n--> {:s} rename to {:s} copy to {:s}\n"
+                      .format(img_name, new_name, dst_hq_dir))
+
+            print("--> LQ-HQ pair {:s} generated @ {:s}\n".format(new_name, dst_root))
+            cnt += 1
+            p_bar.update()
 
 
 def filter_HQLQ_pairs(root_dir):
@@ -720,14 +771,15 @@ def gen_lost_LQs(root_dir, ext=".jpg"):
     generator = MultiPlateGenerator('../LicensePlateGenerator/plate_model',
                                     '../LicensePlateGenerator/font_model')
 
-    with tqdm(total=len(hq_img_names)) as progress_bar:
+    with tqdm(total=len(hq_img_names)) as p_bar:
         if len(hq_img_names) > len(lq_img_names):
             for hq_name in hq_img_names:
                 if hq_name in lq_img_names:
-                    progress_bar.update()
+                    p_bar.update()
                     continue
 
                 fields = hq_name.split("_")
+
                 # ---------- Generate LQ img: ideal img
                 plate_number = fields[0]
                 plate_color = fields[1]
@@ -736,23 +788,23 @@ def gen_lost_LQs(root_dir, ext=".jpg"):
                 if '~' in plate_number \
                         or len(plate_number) < 7 \
                         or plate_layers == "double":
-                    progress_bar.update()
-                    print("[Warning]: ~ found in {:s}!".format(hq_name))
+                    p_bar.update()
+                    print("\n[Warning]: ~ found in {:s}!\n".format(hq_name))
                     continue
 
                 # if plate_color not in ["blue", "green", "yellow", "white", "black"]:
-                #     progress_bar.update()
+                #     p_bar.update()
                 #     continue
                 if plate_color == "green" and len(plate_number) != 8:
-                    progress_bar.update()
+                    p_bar.update()
                     continue
                 elif plate_color == "blue" and len(plate_number) != 7:
-                    progress_bar.update()
+                    p_bar.update()
                     continue
 
                 lb = "_".join(fields)
                 if "fake" in lb:
-                    print("[Warning]: Fake hq found!")
+                    print("\n[Warning]: Fake hq found!\n")
                     # continue
                 # print("--> label: {:s}".format(lb))
 
@@ -769,17 +821,25 @@ def gen_lost_LQs(root_dir, ext=".jpg"):
 
                 lq_path = LQ_dir + "/{:s}".format(hq_name)
                 lq_img = generator.generate_plate_special(plate_number, plate_color, plate_layers)
+                if lq_img is None:
+                    print("\n[Err]: {:s} generated failed!\n".format(hq_name))
+                    p_bar.update()
+                    continue
                 if plate_layers == 0:  # resize
                     lq_img = cv2.resize(lq_img, (192, 64), cv2.INTER_LINEAR)
+                elif plate_layers == 1:
+                    print("\n[Warning]: double license plate not supported yet!\n")
+                    p_bar.update()
+                    continue
                 try:
                     cv2.imwrite(lq_path, lq_img)
                 except Exception as e:
-                    print("[Err]: lq_path: {:s}".format(lq_path))
-                    progress_bar.update()
+                    print("\n[Err]: lq_path: {:s}\n".format(lq_path))
+                    p_bar.update()
                     continue
                 print("\n--> LQ img {:s} generated @ {:s}\n"
                       .format(hq_name, LQ_dir))
-                progress_bar.update()
+                p_bar.update()
 
 
 def viz_img_bursts(root_dir, out_dir, num_src_dirs=5, ext=".jpg"):
@@ -861,17 +921,47 @@ def unify_HQ_LQ_imgsize(root_dir, img_size=(192, 64), ext=".jpg"):
     find_files(LQ_dir, lq_img_paths, ext)
     with tqdm(total=len(hq_img_paths)) as p_bar:
         for hq_path in hq_img_paths:
+            hq_name = os.path.split(hq_path)[-1]
+            fields = hq_name.split("_")
+            plate_number = fields[0]
+            plate_color = fields[1]
+            plate_layer = fields[2]
+            if plate_number == "double" or plate_layer == "Double":
+                os.remove(hq_path)
+                print("\n[Warning]: {:s} removed\n".format(hq_path))
+                p_bar.update()
+                continue
+            if "double" in hq_name or "Double" in hq_name:
+                os.remove(hq_path)
+                print("\n[Warning]: {:s} removed\n".format(hq_path))
+                p_bar.update()
+                continue
             img = cv2.imread(hq_path, cv2.IMREAD_COLOR)
             h, w, c = img.shape
             if w != img_size[0] or h != img_size[1]:
                 img = cv2.resize(img, img_size, cv2.INTER_LINEAR)
                 cv2.imwrite(hq_path, img)
-                print("--> {:s} resized to {:d}×{:d}"
+                print("\n--> {:s} resized to {:d}×{:d}\n"
                       .format(hq_path, img_size[0], img_size[1]))
             p_bar.update()
 
     with tqdm(total=len(lq_img_paths)) as p_bar:
         for lq_path in lq_img_paths:
+            lq_name = os.path.split(lq_path)[-1]
+            fields = lq_name.split("_")
+            plate_number = fields[0]
+            plate_color = fields[1]
+            plate_layer = fields[2]
+            if plate_number == "double" or plate_layer == "Double":
+                os.remove(lq_path)
+                print("\n[Warning]: {:s} removed\n".format(lq_path))
+                p_bar.update()
+                continue
+            if "double" in hq_name or "Double" in lq_name:
+                os.remove(lq_path)
+                print("\n[Warning]: {:s} removed\n".format(lq_path))
+                p_bar.update()
+                continue
             img = cv2.imread(lq_path, cv2.IMREAD_COLOR)
             h, w, c = img.shape
             if w != img_size[0] or h != img_size[1]:
@@ -1004,8 +1094,16 @@ if __name__ == "__main__":
 
     # filter_HQLQ_pairs(root_dir="../../../img2img/")
 
-    # augment_HQLQ_dataset(src_root="/mnt/diskd/even/LPDataSingle",
+    # augment_HQLQ_dataset(src="/mnt/diskd/even/LPDataSingle",
     #                      dst_root="../../../img2img")
+    # augment_HQLQ_dataset(src="../config/img2img/train.txt",
+    #                      dst_root="../../../img2img")
+
+    # gen_lost_LQs(root_dir="../../../img2img")
+    # filter_HQLQ_pairs(root_dir="../../../img2img/")
+
+    unify_HQ_LQ_imgsize(root_dir="../../../img2img")
+    filter_HQLQ_pairs(root_dir="../../../img2img/")
 
     # gen_lost_LQs(root_dir="../../../img2img")
 
@@ -1024,7 +1122,7 @@ if __name__ == "__main__":
     # add_specify_plates_to_test(train_root="../../../img2img",
     #                            test_root="../../../img2img/val")
 
-    viz_txt2img_set(src_dir="../../results/img2img/img_translate",
-                    viz_dir="/mnt/diske/vis_plate_gen_5")
+    # viz_txt2img_set(src_dir="../../results/img2img/img_translate",
+    #                 viz_dir="/mnt/diske/vis_plate_gen_5")
 
     print("--> Done.")
