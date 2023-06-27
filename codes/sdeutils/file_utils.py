@@ -1171,6 +1171,7 @@ def split_and_statistics(root_dir):
             os.makedirs(sub_dir)
             print("[Info]: {:s} made".format(sub_dir))
 
+    # 构建【省份】车牌字典
     province_plate_dict = dict.fromkeys(province_set, 0)
 
     # 构建【省份】车牌子目录
@@ -1211,6 +1212,10 @@ def split_and_statistics(root_dir):
                     province = plate_number[0]
                     province_plate_dict[province] += 1
                     dst_dir = root_dir + "/{:s}".format(province)
+                else:
+                    print("\n[Err]: invalid plate: {:s}!\n".format(img_name))
+                    p_bar.update()
+                    continue
 
             # ---------- Copy file
             # if os.path.isdir(dst_dir):
@@ -1220,7 +1225,7 @@ def split_and_statistics(root_dir):
             dst_path = os.path.abspath(dst_dir + "/" + img_name)
             if not os.path.isfile(dst_path):
                 shutil.copy(img_path, dst_dir)
-                print("--> {:s} [cp to] {:s}".format(img_name, dst_dir))
+                print("\n--> {:s} [cp to] {:s}\n".format(img_name, dst_dir))
 
             p_bar.update()
             # ---------- 遍历结束
