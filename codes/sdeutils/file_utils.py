@@ -1218,7 +1218,7 @@ def split_and_statistics(root_dir):
                     province_plate_dict[province] += 1
                     dst_dir = root_dir + "/{:s}".format(province)
                 else:
-                    print("\n[Err]: invalid plate: {:s}!\n".format(img_name))
+                    print("\n[Warning]: invalid plate: {:s}!\n".format(img_name))
 
                     # ----- cp to 【root/tmp】 dir
                     dst_path = os.path.abspath(tmp_dir + "/" + img_name)
