@@ -29,7 +29,7 @@ datasets:
 
     use_shuffle: true
     n_workers: 0  # per GPU
-    batch_size: 14  # 12
+    batch_size: 15  # 12
     GT_size: 192, 64
     LR_size: 192, 64
     use_flip: false
@@ -53,7 +53,7 @@ network_G:
 
 #### path
 path:
-  pretrain_model_G: ../weights/455000_G.pth
+  pretrain_model_G: ../weights/60000_G.pth
   strict_load: true
   resume_state: # ../states/455000.state
 

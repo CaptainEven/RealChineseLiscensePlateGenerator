@@ -1084,6 +1084,154 @@ def viz_txt2img_set(src_dir, viz_dir, ext=".png"):
         print("--> {:s} saved".format(viz_path))
 
 
+global char_set
+char_set = {
+    "0", "1", "2", "3", "4",
+    "5", "6", "7", "8", "9",
+    "A", "B", "C", "D", "E",
+    "F", "G", "H", "J", "K",
+    "L", "M", "N", "P", "Q",
+    "R", "S", "T", "U", "V",
+    "W", "X", "Y", "Z",
+    "桂", "贵", "冀", "吉", "京",
+    "琼", "陕", "苏", "湘", "渝",
+    "豫", "藏", "川", "鄂", "甘",
+    "赣", "黑", "沪", "津", "晋",
+    "鲁", "蒙", "闽", "宁", "青",
+    "使", "皖", "新", "粤", "云",
+    "浙", "辽", "军", "空", "兰",
+    "广", "海", "成", "应", "急",
+    "学", "警", "港", "澳", "赛",
+    "领", "挂"
+}
+
+letter_set = {
+    "A", "B", "C", "D", "E",
+    "F", "G", "H", "J", "K",
+    "L", "M", "N", "P", "Q",
+    "R", "S", "T", "U", "V",
+    "W", "X", "Y", "Z",
+}
+
+province_set = {
+    "桂", "贵", "冀", "吉", "京",
+    "琼", "陕", "苏", "湘", "渝",
+    "豫", "藏", "川", "鄂", "甘",
+    "赣", "黑", "沪", "津", "晋",
+    "鲁", "蒙", "闽", "宁", "青",
+    "皖", "新", "粤", "云", "浙",
+    "辽"
+}
+
+special_set = {
+    "军", "空", "兰",
+    "广", "海", "成", "应", "急",
+    "学", "警", "港", "澳", "赛",
+    "领", "挂", "WJ"
+}
+
+
+def split_and_statistics(root_dir):
+    """
+    @param root_dir:
+    @return:
+    """
+    root_dir = os.path.abspath(root_dir)
+    if not os.path.isdir(root_dir):
+        print("[Info]: invalid root dir:{:s}".format(root_dir))
+        exit(-1)
+
+    LQ_dir = os.path.abspath(root_dir + "/LQ")
+    HQ_dir = os.path.abspath(root_dir + "/HQ")
+    if not os.path.abspath(LQ_dir):
+        print("[Info]: invalid LQ dir: {:s}".format(LQ_dir))
+        exit(-1)
+    if not os.path.abspath(HQ_dir):
+        print("[Info]: invalid HQ dir: {:s}".format(HQ_dir))
+        exit(-1)
+    # parent_dir = os.path.abspath(os.path.join(LQ_dir, ".."))
+
+    lq_img_paths = []
+    find_files(LQ_dir, lq_img_paths, ".jpg")
+    print("[Info]: finding {:d} files".format(len(lq_img_paths)))
+
+    # ---------- 构建统计词典
+    special_plate_dict = {
+        "港澳": 0,
+        "大使馆": 0,
+        "应急": 0,
+        "警_武警": 0,
+        "军": 0,
+    }
+
+    # 构建【特殊】车牌子目录
+    for k in special_plate_dict.keys():
+        sub_dir = os.path.abspath(root_dir + "/" + k)
+        if not os.path.isdir(sub_dir):
+            os.makedirs(sub_dir)
+            print("[Info]: {:s} made".format(sub_dir))
+
+    province_plate_dict = dict.fromkeys(province_set, 0)
+
+    # 构建【省份】车牌子目录
+    for name in province_set:
+        sub_dir = os.path.abspath(root_dir + "/" + name)
+        if not os.path.isdir(sub_dir):
+            os.makedirs(sub_dir)
+            print("[Info]: {:s} made".format(sub_dir))
+
+    with tqdm(total=len(lq_img_paths)) as p_bar:
+        for img_path in lq_img_paths:
+            img_name = os.path.split(img_path)[-1]
+            fields = img_name.split("_")
+            assert len(fields) >= 3
+
+            plate_number = fields[0]
+            plate_color = fields[1]
+            plate_layer = fields[2]
+
+            # ---------- 先检查是否属于特殊车牌
+            if "港" in plate_number or "澳" in plate_number:
+                special_plate_dict["港澳"] += 1
+                dst_dir = root_dir + "/港澳"
+            elif "使" in plate_number:
+                special_plate_dict["大使馆"] += 1
+                dst_dir = root_dir + "/大使馆"
+            elif "应急" in plate_number:
+                special_plate_dict["应急"] += 1
+                dst_dir = root_dir + "/应急"
+            elif "警" in plate_number or "WJ" in plate_number:
+                special_plate_dict["警_武警"] += 1
+                dst_dir = root_dir + "/警_武警"
+            elif plate_color == "white" and plate_number[0].isalpha():
+                special_plate_dict["军"] += 1
+                dst_dir = os.path.abspath(root_dir + "/军")
+            else:  # ---------- 再对省份进行划分
+                if plate_number[0] in province_set:  # 首字符判断
+                    province = plate_number[0]
+                    province_plate_dict[province] += 1
+                    dst_dir = root_dir + "/{:s}".format(province)
+
+            # ---------- Copy file
+            # if os.path.isdir(dst_dir):
+            #     print("[Err]: invalid dir: {:s}".format(dst_dir))
+            #     p_bar.update()
+            #     continue
+            dst_path = os.path.abspath(dst_dir + "/" + img_name)
+            if not os.path.isfile(dst_path):
+                shutil.copy(img_path, dst_dir)
+                print("--> {:s} [cp to] {:s}".format(img_name, dst_dir))
+
+            p_bar.update()
+            # ---------- 遍历结束
+
+    # 统计信息
+    for k, v in province_plate_dict.items():
+        print("{:8s} {:6d}".format(k + ":", v))
+    for k, v in special_plate_dict.items():
+        print("{:8s} {:6d}".format(k + ":", v))
+
+
 if __name__ == "__main__":
     # gen_HQs(img_path_list_f="../files/train_crnn_file_list221230.txt",
     #         HQ_dir="../../../HQ")
@@ -1102,8 +1250,8 @@ if __name__ == "__main__":
     # gen_lost_LQs(root_dir="../../../img2img")
     # filter_HQLQ_pairs(root_dir="../../../img2img/")
 
-    unify_HQ_LQ_imgsize(root_dir="../../../img2img")
-    filter_HQLQ_pairs(root_dir="../../../img2img/")
+    # unify_HQ_LQ_imgsize(root_dir="../../../img2img")
+    # filter_HQLQ_pairs(root_dir="../../../img2img/")
 
     # gen_lost_LQs(root_dir="../../../img2img")
 
@@ -1124,5 +1272,8 @@ if __name__ == "__main__":
 
     # viz_txt2img_set(src_dir="../../results/img2img/img_translate",
     #                 viz_dir="/mnt/diske/vis_plate_gen_5")
+
+    # ----------
+    split_and_statistics(root_dir="../../../img2img/")
 
     print("--> Done.")
