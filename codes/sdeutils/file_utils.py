@@ -1296,9 +1296,9 @@ def rename_LPs(root_dir):
                     and plate_color != "white":
                 plate_color = "white"
 
-                if plate_layer == "False" \
-                        or plate_layer == "false":
-                    plate_layer = "single"
+            if plate_layer == "False" \
+                    or plate_layer == "false":
+                plate_layer = "single"
 
             fields[0] = plate_number
             fields[1] = plate_color
