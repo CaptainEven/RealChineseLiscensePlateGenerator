@@ -1151,9 +1151,14 @@ def split_and_statistics(root_dir):
         exit(-1)
     # parent_dir = os.path.abspath(os.path.join(LQ_dir, ".."))
 
-    lq_img_paths = []
-    find_files(LQ_dir, lq_img_paths, ".jpg")
-    print("[Info]: finding {:d} files".format(len(lq_img_paths)))
+    tmp_dir = os.path.abspath(root_dir + "/tmp")
+    if not os.path.isdir(tmp_dir):
+        os.makedirs(tmp_dir)
+        print("[Info]: {:s} made".format(tmp_dir))
+
+    hq_img_paths = []
+    find_files(HQ_dir, hq_img_paths, ".jpg")
+    print("[Info]: finding {:d} files".format(len(hq_img_paths)))
 
     # ---------- 构建统计词典
     special_plate_dict = {
@@ -1181,8 +1186,8 @@ def split_and_statistics(root_dir):
             os.makedirs(sub_dir)
             print("[Info]: {:s} made".format(sub_dir))
 
-    with tqdm(total=len(lq_img_paths)) as p_bar:
-        for img_path in lq_img_paths:
+    with tqdm(total=len(hq_img_paths)) as p_bar:
+        for img_path in hq_img_paths:
             img_name = os.path.split(img_path)[-1]
             fields = img_name.split("_")
             assert len(fields) >= 3
@@ -1214,6 +1219,13 @@ def split_and_statistics(root_dir):
                     dst_dir = root_dir + "/{:s}".format(province)
                 else:
                     print("\n[Err]: invalid plate: {:s}!\n".format(img_name))
+
+                    # ----- cp to 【root/tmp】 dir
+                    dst_path = os.path.abspath(tmp_dir + "/" + img_name)
+                    if not os.path.isfile(dst_path):
+                        shutil.copy(img_path, tmp_dir)
+                        print("\n--> {:s} [cp to] {:s}\n".format(img_name, tmp_dir))
+
                     p_bar.update()
                     continue
 
@@ -1231,10 +1243,21 @@ def split_and_statistics(root_dir):
             # ---------- 遍历结束
 
     # 统计信息
+    cnt = 0
     for k, v in province_plate_dict.items():
         print("{:8s} {:6d}".format(k + ":", v))
+        cnt += v
     for k, v in special_plate_dict.items():
         print("{:8s} {:6d}".format(k + ":", v))
+        cnt += v
+    print("[Info]: total {:d} valid files".format(cnt))
+
+
+def rename_LPs(root_dir):
+    """
+    @param root_dir:
+    @return:
+    """
 
 
 if __name__ == "__main__":
