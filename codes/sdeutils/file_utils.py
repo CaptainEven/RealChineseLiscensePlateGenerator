@@ -1186,6 +1186,7 @@ def split_and_statistics(root_dir):
             os.makedirs(sub_dir)
             print("[Info]: {:s} made".format(sub_dir))
 
+    cnt_invalid = 0
     with tqdm(total=len(hq_img_paths)) as p_bar:
         for img_path in hq_img_paths:
             img_name = os.path.split(img_path)[-1]
@@ -1223,9 +1224,9 @@ def split_and_statistics(root_dir):
                     # ----- cp to 【root/tmp】 dir
                     dst_path = os.path.abspath(tmp_dir + "/" + img_name)
                     if not os.path.isfile(dst_path):
-                        shutil.copy(img_path, tmp_dir)
+                        shutil.copyfile(img_path, dst_path)
                         print("\n--> {:s} [cp to] {:s}\n".format(img_name, tmp_dir))
-
+                    cnt_invalid += 1
                     p_bar.update()
                     continue
 
