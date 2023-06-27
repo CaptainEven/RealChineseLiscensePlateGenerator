@@ -788,8 +788,8 @@ def gen_lost_LQs(root_dir, ext=".jpg"):
                 if '~' in plate_number \
                         or len(plate_number) < 7 \
                         or plate_layers == "double":
-                    p_bar.update()
                     print("\n[Warning]: ~ found in {:s}!\n".format(hq_name))
+                    p_bar.update()
                     continue
 
                 # if plate_color not in ["blue", "green", "yellow", "white", "black"]:
@@ -822,7 +822,8 @@ def gen_lost_LQs(root_dir, ext=".jpg"):
                 lq_path = LQ_dir + "/{:s}".format(hq_name)
                 lq_img = generator.generate_plate_special(plate_number, plate_color, plate_layers)
                 if lq_img is None:
-                    print("\n[Err]: {:s} generated failed!\n".format(hq_name))
+                    print("\n[Err]: {:s} generated failed!\n"
+                          .format(hq_name))
                     p_bar.update()
                     continue
                 if plate_layers == 0:  # resize
@@ -1084,7 +1085,7 @@ def viz_txt2img_set(src_dir, viz_dir, ext=".png"):
         print("--> {:s} saved".format(viz_path))
 
 
-global char_set
+global char_set, letter_set, province_set, special_set
 char_set = {
     "0", "1", "2", "3", "4",
     "5", "6", "7", "8", "9",
@@ -1210,7 +1211,7 @@ def split_and_statistics(root_dir):
             elif "警" in plate_number or "WJ" in plate_number:
                 special_plate_dict["警_武警"] += 1
                 dst_dir = root_dir + "/警_武警"
-            elif plate_color == "white" and plate_number[0].isalpha():
+            elif plate_color == "white" and plate_number[0] in letter_set:
                 special_plate_dict["军"] += 1
                 dst_dir = os.path.abspath(root_dir + "/军")
             else:  # ---------- 再对省份进行划分
@@ -1259,6 +1260,59 @@ def rename_LPs(root_dir):
     @param root_dir:
     @return:
     """
+    root_dir = os.path.abspath(root_dir)
+    if not os.path.isdir(root_dir):
+        print("[Info]: invalid root dir:{:s}".format(root_dir))
+        exit(-1)
+
+    LQ_dir = os.path.abspath(root_dir + "/LQ")
+    HQ_dir = os.path.abspath(root_dir + "/HQ")
+    if not os.path.abspath(LQ_dir):
+        print("[Info]: invalid LQ dir: {:s}".format(LQ_dir))
+        exit(-1)
+    if not os.path.abspath(HQ_dir):
+        print("[Info]: invalid HQ dir: {:s}".format(HQ_dir))
+        exit(-1)
+
+    hq_img_paths = []
+    find_files(HQ_dir, hq_img_paths, ".jpg")
+    print("[Info]: find {:d} files in {:s}"
+          .format(len(hq_img_paths), HQ_dir))
+
+    with tqdm(total=len(hq_img_paths)) as p_bar:
+        for img_path in hq_img_paths:
+            img_name = os.path.split(img_path)[-1]
+            fields = img_name.split("_")
+            plate_number = fields[0]
+            plate_color = fields[1]
+            plate_layer = fields[2]
+
+            if plate_color == "whitearmy":
+                plate_color = "white"
+
+            if plate_number[0] in letter_set \
+                    and plate_number[1] in letter_set \
+                    and len(plate_number) == 7 \
+                    and plate_color != "white":
+                plate_color = "white"
+
+                if plate_layer == "False" \
+                        or plate_layer == "false":
+                    plate_layer = "single"
+
+            fields[0] = plate_number
+            fields[1] = plate_color
+            fields[2] = plate_layer
+
+            new_name = "_".join(fields)
+            new_path = HQ_dir + "/" + new_name
+            if img_path == new_path:
+                p_bar.update()
+                continue
+            os.rename(img_path, new_path)
+            print("\n--> {:s} [renamed to] {:s} in {:s}\n"
+                  .format(img_name, new_name, HQ_dir))
+            p_bar.update()
 
 
 if __name__ == "__main__":
@@ -1304,5 +1358,9 @@ if __name__ == "__main__":
 
     # ----------
     split_and_statistics(root_dir="../../../img2img/")
+    rename_LPs(root_dir="../../../img2img/")
+    gen_lost_LQs(root_dir="../../../img2img")
+    filter_HQLQ_pairs(root_dir="../../../img2img/")
+    gen_lost_LQs(root_dir="../../../img2img")
 
     print("--> Done.")
