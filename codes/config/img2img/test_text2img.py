@@ -323,7 +323,7 @@ def text2img(txt, model, generator, dataset_dir, n_gen=10):
                                           is_double=is_double)
     model_img_path = "/mnt/diske/{:s}.png".format(plate_number)
     cv2.imwrite(model_img_path, LQ)
-    print("[Info]: model image(LQ) {:s} saved".format(model_img_path))
+    # print("[Info]: model image(LQ) {:s} saved".format(model_img_path))
 
     # ---------- Generate HQ img
     if plate_layers == "single":
@@ -338,23 +338,25 @@ def text2img(txt, model, generator, dataset_dir, n_gen=10):
             LQ = torch.from_numpy(np.ascontiguousarray(np.transpose(LQ, (2, 0, 1)))).float()
             LQ = LQ.unsqueeze(0)  # CHW -> NCHW
 
-            for i in range(n_gen):
-                # ---------- Inference
-                noisy_state = sde.noise_state(LQ)
-                model.feed_data(noisy_state, LQ)
-                model.test(sde, save_states=True)
+            with tqdm(total=n_gen) as p_bar:
+                for i in range(n_gen):
+                    # ---------- Inference
+                    noisy_state = sde.noise_state(LQ)
+                    model.feed_data(noisy_state, LQ)
+                    model.test(sde, save_states=True)
 
-                # ---------- Get output
-                visuals = model.get_current_visuals(need_GT=False)
-                output = visuals["Output"]
-                output = util.tensor2img(output.squeeze())  # uint8
+                    # ---------- Get output
+                    visuals = model.get_current_visuals(need_GT=False)
+                    output = visuals["Output"]
+                    output = util.tensor2img(output.squeeze())  # uint8
 
-                # ---------- Save output
-                save_img_path = dataset_dir + "/" \
-                                + img_name + "_GEN_{:d}.png".format(i + 1)
-                save_img_path = os.path.abspath(save_img_path)
-                cv2.imwrite(save_img_path, output)
-                print("--> {:s} generated".format(save_img_path))
+                    # ---------- Save output
+                    save_img_path = dataset_dir + "/" \
+                                    + img_name + "_GEN_{:d}.png".format(i + 1)
+                    save_img_path = os.path.abspath(save_img_path)
+                    cv2.imwrite(save_img_path, output)
+                    # print("\n--> {:s} generated\n".format(save_img_path))
+                    p_bar.update()
 
 
 def test_text2img(args, model, sde):
@@ -406,4 +408,4 @@ def test_text2img(args, model, sde):
 if __name__ == "__main__":
     test_text2img(args, model, sde)
     viz_txt2img_set(src_dir="../../../results/img2img/img_translate",
-                    viz_dir="/mnt/diske/vis_plate_gen_8")
+                    viz_dir="/mnt/diske/vis_plate_gen_2")

@@ -770,7 +770,7 @@ def gen_lost_LQs(root_dir, ext=".jpg"):
 
     generator = MultiPlateGenerator('../LicensePlateGenerator/plate_model',
                                     '../LicensePlateGenerator/font_model')
-
+    cnt = 0
     with tqdm(total=len(hq_img_names)) as p_bar:
         if len(hq_img_names) > len(lq_img_names):
             for hq_name in hq_img_names:
@@ -785,10 +785,17 @@ def gen_lost_LQs(root_dir, ext=".jpg"):
                 plate_color = fields[1]
                 plate_layers = fields[2]
 
-                if '~' in plate_number \
-                        or len(plate_number) < 7 \
-                        or plate_layers == "double":
-                    print("\n[Warning]: ~ found in {:s}!\n".format(hq_name))
+                if '~' in plate_number:
+                    p_bar.update()
+                    continue
+
+                if len(plate_number) < 7:
+                    print("\n[Warning]: found number of chars < 7!\n")
+                    p_bar.update()
+                    continue
+
+                if plate_layers == "double":
+                    print("\n[Warning]: found double license plate {:s}!\n".format(hq_name))
                     p_bar.update()
                     continue
 
@@ -840,6 +847,8 @@ def gen_lost_LQs(root_dir, ext=".jpg"):
                     continue
                 print("\n--> LQ img {:s} generated @ {:s}\n"
                       .format(hq_name, LQ_dir))
+
+                cnt += 1
                 p_bar.update()
 
 
@@ -1357,10 +1366,10 @@ if __name__ == "__main__":
     #                 viz_dir="/mnt/diske/vis_plate_gen_5")
 
     # ----------
-    split_and_statistics(root_dir="../../../img2img/")
-    rename_LPs(root_dir="../../../img2img/")
+    # split_and_statistics(root_dir="../../../img2img/")
+    # rename_LPs(root_dir="../../../img2img/")
     gen_lost_LQs(root_dir="../../../img2img")
-    filter_HQLQ_pairs(root_dir="../../../img2img/")
-    gen_lost_LQs(root_dir="../../../img2img")
+    # filter_HQLQ_pairs(root_dir="../../../img2img/")
+    # gen_lost_LQs(root_dir="../../../img2img")
 
     print("--> Done.")

@@ -54,32 +54,53 @@ class SDE(abc.ABC):
         return x - self.sde_reverse_drift(x, score, t)
 
     def reverse_sde_step(self, x, score, t):
+        """
+        @param x:
+        @param score:
+        @param t:
+        @return:
+        """
         return x - self.sde_reverse_drift(x, score, t) - self.dispersion(x, t)
 
     def reverse_ode_step(self, x, score, t):
         return x - self.ode_reverse_drift(x, score, t)
 
     def forward(self, x0, T=-1):
+        """
+        @param x0:
+        @param T:
+        @return:
+        """
         T = self.T if T < 0 else T
         x = x0.clone()
-        for t in tqdm(range(1, T + 1)):
+        for t in range(1, T + 1):
             x = self.forward_step(x, t)
 
         return x
 
     def reverse_sde(self, xt, T=-1):
+        """
+        @param xt:
+        @param T:
+        @return:
+        """
         T = self.T if T < 0 else T
         x = xt.clone()
-        for t in tqdm(reversed(range(1, T + 1))):
+        for t in reversed(range(1, T + 1)):
             score = self.score_fn(x, t)
             x = self.reverse_sde_step(x, score, t)
 
         return x
 
     def reverse_ode(self, xt, T=-1):
+        """
+        @param xt:
+        @param T:
+        @return:
+        """
         T = self.T if T < 0 else T
         x = xt.clone()
-        for t in tqdm(reversed(range(1, T + 1))):
+        for t in reversed(range(1, T + 1)):
             score = self.score_fn(x, t)
             x = self.reverse_ode_step(x, score, t)
 
@@ -212,6 +233,10 @@ class IRSDE(SDE):
 
     # set score model for reverse process
     def set_model(self, model):
+        """
+        @param model:
+        @return:
+        """
         self.model = model
 
     #####################################
@@ -350,13 +375,17 @@ class IRSDE(SDE):
         """
         T = self.T if T < 0 else T
         x = x0.clone()
-        for t in tqdm(range(1, T + 1)):
+        for t in range(1, T + 1):
             x = self.forward_step(x, t)
             os.makedirs(save_dir, exist_ok=True)
             tvutils.save_image(x.data, f'{save_dir}/state_{t}.png', normalize=False)
         return x
 
-    def reverse_sde(self, xt, T=-1, save_states=False, save_dir='sde_state'):
+    def reverse_sde(self,
+                    xt,
+                    T=-1,
+                    save_states=False,
+                    save_dir='sde_state'):
         """
         @param xt:
         @param T:
@@ -366,7 +395,7 @@ class IRSDE(SDE):
         """
         T = self.T if T < 0 else T
         x = xt.clone()
-        for t in tqdm(reversed(range(1, T + 1))):
+        for t in reversed(range(1, T + 1)):
             score = self.score_fn(x, t)
             x = self.reverse_sde_step(x, score, t)
 
@@ -389,7 +418,7 @@ class IRSDE(SDE):
         """
         T = self.T if T < 0 else T
         x = xt.clone()
-        for t in tqdm(reversed(range(1, T + 1))):
+        for t in reversed(range(1, T + 1)):
             score = self.score_fn(x, t)
             x = self.reverse_ode_step(x, score, t)
 
@@ -403,7 +432,12 @@ class IRSDE(SDE):
         return x
 
     # sample ode using Black-box ODE solver (not used)
-    def ode_sampler(self, xt, rtol=1e-5, atol=1e-5, method='RK45', eps=1e-3, ):
+    def ode_sampler(self,
+                    xt,
+                    rtol=1e-5,
+                    atol=1e-5,
+                    method='RK45',
+                    eps=1e-3, ):
         """
         @param xt:
         @param rtol:
@@ -423,6 +457,11 @@ class IRSDE(SDE):
             return torch.from_numpy(x.reshape(shape))
 
         def ode_func(t, x):
+            """
+            @param t:
+            @param x:
+            @return:
+            """
             t = int(t)
             x = from_flattened_numpy(x, shape).to(self.device).type(torch.float32)
             score = self.score_fn(x, t)
@@ -438,9 +477,15 @@ class IRSDE(SDE):
         return x
 
     def optimal_reverse(self, xt, x0, T=-1):
+        """
+        @param xt:
+        @param x0:
+        @param T:
+        @return:
+        """
         T = self.T if T < 0 else T
         x = xt.clone()
-        for t in tqdm(reversed(range(1, T + 1))):
+        for t in reversed(range(1, T + 1)):
             x = self.reverse_optimum_step(x, x0, t)
 
         return x
@@ -448,6 +493,10 @@ class IRSDE(SDE):
     ################################################################
 
     def weights(self, t):
+        """
+        @param t:
+        @return:
+        """
         return torch.exp(-self.thetas_cumsum[t] * self.dt)
 
     # sample states for training
@@ -599,7 +648,20 @@ class DenoisingSDE(SDE):
     def get_real_score(self, xt, x0, t):
         return -(xt - self.mu_bar(x0, t)) / self.sigma_bar(t) ** 2
 
-    def reverse_sde(self, xt, x0=None, T=-1, save_states=False, save_dir='sde_state'):
+    def reverse_sde(self,
+                    xt,
+                    x0=None,
+                    T=-1,
+                    save_states=False,
+                    save_dir='sde_state'):
+        """
+        @param xt:
+        @param x0:
+        @param T:
+        @param save_states:
+        @param save_dir:
+        @return:
+        """
         T = self.T if T < 0 else T
         x = xt.clone()
         for t in tqdm(reversed(range(1, T + 1))):
@@ -618,7 +680,20 @@ class DenoisingSDE(SDE):
 
         return x
 
-    def reverse_ode(self, xt, x0=None, T=-1, save_states=False, save_dir='ode_state'):
+    def reverse_ode(self,
+                    xt,
+                    x0=None,
+                    T=-1,
+                    save_states=False,
+                    save_dir='ode_state'):
+        """
+        @param xt:
+        @param x0:
+        @param T:
+        @param save_states:
+        @param save_dir:
+        @return:
+        """
         T = self.T if T < 0 else T
         x = xt.clone()
         for t in tqdm(reversed(range(1, T + 1))):
