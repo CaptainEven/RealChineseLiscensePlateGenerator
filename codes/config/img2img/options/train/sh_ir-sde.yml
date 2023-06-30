@@ -53,7 +53,7 @@ network_G:
 
 #### path
 path:
-  pretrain_model_G: ../weights/60000_G.pth
+  pretrain_model_G: ../weights/50000_G.pth
   strict_load: true
   resume_state: # ../states/455000.state
 

@@ -1366,9 +1366,9 @@ if __name__ == "__main__":
     #                 viz_dir="/mnt/diske/vis_plate_gen_5")
 
     # ----------
-    # split_and_statistics(root_dir="../../../img2img/")
+    split_and_statistics(root_dir="../../../img2img/")
     # rename_LPs(root_dir="../../../img2img/")
-    gen_lost_LQs(root_dir="../../../img2img")
+    # gen_lost_LQs(root_dir="../../../img2img")
     # filter_HQLQ_pairs(root_dir="../../../img2img/")
     # gen_lost_LQs(root_dir="../../../img2img")
 
