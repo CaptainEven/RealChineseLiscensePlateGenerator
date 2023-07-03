@@ -27,6 +27,8 @@ import cv2
 from LicensePlateGenerator.generate_multi_plate import MultiPlateGenerator
 from LicensePlateGenerator.generate_special_plate import generate_one_plate
 
+from gen_random_plate_string import random_generate_str
+
 #### options
 parser = argparse.ArgumentParser()
 parser.add_argument("-opt",
@@ -37,14 +39,18 @@ parser.add_argument("--text",
                     type=str,
                     default="使014578_black_single",
                     help="")
+parser.add_argument("--num",
+                    type=int,
+                    default=100,
+                    help="")
 parser.add_argument("--list_file",
                     type=str,
                     default="./plates.txt",
                     help="")
 parser.add_argument("--type",
                     type=str,
-                    default="list",
-                    help="single | list")
+                    default="instant",
+                    help="single | list | instant")
 
 args = parser.parse_args()
 args = edict(vars(args))  # vars()函数返回对象object的属性和属性值的字典对象。
@@ -403,9 +409,25 @@ def test_text2img(args, model, sde):
                 print("\n--> generating {:s}, ({:3d}/{:3d})...\n"
                       .format(text, file_i, n_files))
                 text2img(text, model, generator, dataset_dir, n_gen=10)
+    elif args.type == "instant":
+        color = ["blue", "yellow", "white", "black", "green"]
+        # layer = ["single", "double"]
+        layer = ["single"]
+        yellow_special = ["xue", "gua", "normal"]
+        white_special = ["wujing", "jun", "jing", "yingji"]
+        green_special = ["bus", "normal"]
+        black_special = ["gang", "ao", "dashi", "lingshi"]
+        for i in range(args.num):
+            text = random_generate_str(color,
+                                       layer,
+                                       yellow_special,
+                                       white_special,
+                                       green_special,
+                                       black_special)
+            text2img(text, model, generator, dataset_dir, n_gen=10)
 
 
 if __name__ == "__main__":
     test_text2img(args, model, sde)
     viz_txt2img_set(src_dir="../../../results/img2img/img_translate",
-                    viz_dir="/mnt/diske/vis_plate_gen_3")
+                    viz_dir="/mnt/diske/vis_plate_gen_9")

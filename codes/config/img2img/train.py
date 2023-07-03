@@ -259,46 +259,46 @@ def main():
                 if rank <= 0:
                     logger.info(message)
 
-            # validation, to produce ker_map_list(fake)
-            if current_step % opt["train"]["val_freq"] == 0 and rank <= 0:
-                avg_psnr = 0.0
-                idx = 0
-                print("--> total {:d} val samples".format(len(val_loader)))
-                for _, val_data in enumerate(val_loader):
-                    LQ, GT = val_data["LQ"], val_data["GT"]
-                    noisy_state = sde.noise_state(LQ)
-
-                    # valid Predictor
-                    model.feed_data(noisy_state, LQ, GT)
-                    model.test(sde)
-                    visuals = model.get_current_visuals()
-
-                    output = util.tensor2img(visuals["Output"].squeeze())  # uint8
-                    gt_img = util.tensor2img(visuals["GT"].squeeze())  # uint8
-
-                    # calculate PSNR
-                    avg_psnr += util.calculate_psnr(output, gt_img)
-                    idx += 1
-
-                avg_psnr = avg_psnr / idx
-
-                if avg_psnr > best_psnr:
-                    best_psnr = avg_psnr
-                    best_iter = current_step
-
-                # log
-                logger.info("# Validation # PSNR: {:.6f}, Best PSNR: {:.6f}| Iter: {}"
-                            .format(avg_psnr, best_psnr, best_iter))
-                logger_val = logging.getLogger("val")  # validation logger
-                logger_val.info("Epoch:{:3d} | iter:{:8,d} | psnr: {:.6f}"
-                                .format(epoch, current_step, avg_psnr))
-
-                print("Epoch:{:3d} | iter:{:8,d} | psnr: {:.6f}"
-                      .format(epoch, current_step, avg_psnr))
-
-                # tensorboard logger
-                if opt["use_tb_logger"] and "debug" not in opt["name"]:
-                    tb_logger.add_scalar("psnr", avg_psnr, current_step)
+            # # validation, to produce ker_map_list(fake)
+            # if current_step % opt["train"]["val_freq"] == 0 and rank <= 0:
+            #     avg_psnr = 0.0
+            #     idx = 0
+            #     print("--> total {:d} val samples".format(len(val_loader)))
+            #     for _, val_data in enumerate(val_loader):
+            #         LQ, GT = val_data["LQ"], val_data["GT"]
+            #         noisy_state = sde.noise_state(LQ)
+            #
+            #         # valid Predictor
+            #         model.feed_data(noisy_state, LQ, GT)
+            #         model.test(sde)
+            #         visuals = model.get_current_visuals()
+            #
+            #         output = util.tensor2img(visuals["Output"].squeeze())  # uint8
+            #         gt_img = util.tensor2img(visuals["GT"].squeeze())  # uint8
+            #
+            #         # calculate PSNR
+            #         avg_psnr += util.calculate_psnr(output, gt_img)
+            #         idx += 1
+            #
+            #     avg_psnr = avg_psnr / idx
+            #
+            #     if avg_psnr > best_psnr:
+            #         best_psnr = avg_psnr
+            #         best_iter = current_step
+            #
+            #     # log
+            #     logger.info("# Validation # PSNR: {:.6f}, Best PSNR: {:.6f}| Iter: {}"
+            #                 .format(avg_psnr, best_psnr, best_iter))
+            #     logger_val = logging.getLogger("val")  # validation logger
+            #     logger_val.info("Epoch:{:3d} | iter:{:8,d} | psnr: {:.6f}"
+            #                     .format(epoch, current_step, avg_psnr))
+            #
+            #     print("Epoch:{:3d} | iter:{:8,d} | psnr: {:.6f}"
+            #           .format(epoch, current_step, avg_psnr))
+            #
+            #     # tensorboard logger
+            #     if opt["use_tb_logger"] and "debug" not in opt["name"]:
+            #         tb_logger.add_scalar("psnr", avg_psnr, current_step)
 
             if error.value:
                 sys.exit(0)

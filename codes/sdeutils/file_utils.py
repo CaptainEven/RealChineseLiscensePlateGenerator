@@ -1172,7 +1172,8 @@ def split_and_statistics(root_dir):
 
     # ---------- 构建统计词典
     special_plate_dict = {
-        "港澳": 0,
+        "港": 0,
+        "澳": 0,
         "大使馆": 0,
         "应急": 0,
         "警_武警": 0,
@@ -1208,9 +1209,12 @@ def split_and_statistics(root_dir):
             plate_layer = fields[2]
 
             # ---------- 先检查是否属于特殊车牌
-            if "港" in plate_number or "澳" in plate_number:
-                special_plate_dict["港澳"] += 1
-                dst_dir = root_dir + "/港澳"
+            if "港" in plate_number:
+                special_plate_dict["港"] += 1
+                dst_dir = root_dir + "/港"
+            if "澳" in plate_number:
+                special_plate_dict["澳"] += 1
+                dst_dir = root_dir + "/澳"
             elif "使" in plate_number:
                 special_plate_dict["大使馆"] += 1
                 dst_dir = root_dir + "/大使馆"
@@ -1366,10 +1370,10 @@ if __name__ == "__main__":
     #                 viz_dir="/mnt/diske/vis_plate_gen_5")
 
     # ----------
-    split_and_statistics(root_dir="../../../img2img/")
     # rename_LPs(root_dir="../../../img2img/")
     # gen_lost_LQs(root_dir="../../../img2img")
     # filter_HQLQ_pairs(root_dir="../../../img2img/")
+    split_and_statistics(root_dir="../../../img2img/")
     # gen_lost_LQs(root_dir="../../../img2img")
 
     print("--> Done.")
