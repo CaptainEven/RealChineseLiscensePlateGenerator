@@ -30,12 +30,12 @@ def random_char_and_num(char_list, num_list, steps):
     return lisense
 
 
-def random_generate_str(color,
-                        layer,
-                        yellow_special,
-                        white_special,
-                        green_special,
-                        black_special):
+def generate_random_plate_text(color,
+                               layer,
+                               yellow_special,
+                               white_special,
+                               green_special,
+                               black_special):
     """
     @param color:
     @param layer:
@@ -132,6 +132,6 @@ if __name__ == "__main__":
     out = open(out_file, "w")
     counts = 200
     for i in range(counts):
-        img_name = random_generate_str(color, layer, yellow_special, white_special, green_special, black_special)
+        img_name = generate_random_plate_text(color, layer, yellow_special, white_special, green_special, black_special)
         out.write(img_name + '\n')
     out.close()

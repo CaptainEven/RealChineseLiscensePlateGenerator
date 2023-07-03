@@ -1372,7 +1372,7 @@ if __name__ == "__main__":
     # ----------
     # rename_LPs(root_dir="../../../img2img/")
     # gen_lost_LQs(root_dir="../../../img2img")
-    # filter_HQLQ_pairs(root_dir="../../../img2img/")
+    filter_HQLQ_pairs(root_dir="../../../img2img/")
     split_and_statistics(root_dir="../../../img2img/")
     # gen_lost_LQs(root_dir="../../../img2img")
 

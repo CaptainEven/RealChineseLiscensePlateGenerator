@@ -27,7 +27,7 @@ import cv2
 from LicensePlateGenerator.generate_multi_plate import MultiPlateGenerator
 from LicensePlateGenerator.generate_special_plate import generate_one_plate
 
-from gen_random_plate_string import random_generate_str
+from gen_random_plate_string import generate_random_plate_text
 
 #### options
 parser = argparse.ArgumentParser()
@@ -418,12 +418,13 @@ def test_text2img(args, model, sde):
         green_special = ["bus", "normal"]
         black_special = ["gang", "ao", "dashi", "lingshi"]
         for i in range(args.num):
-            text = random_generate_str(color,
-                                       layer,
-                                       yellow_special,
-                                       white_special,
-                                       green_special,
-                                       black_special)
+            text = generate_random_plate_text(color,
+                                              layer,
+                                              yellow_special,
+                                              white_special,
+                                              green_special,
+                                              black_special)
+            print("--> generating {:s}...".format(text))
             text2img(text, model, generator, dataset_dir, n_gen=10)
 
 
