@@ -131,6 +131,10 @@ class BaseModel:
         if isinstance(network, nn.DataParallel) \
                 or isinstance(network, DistributedDataParallel):
             network = network.module
+        load_path = os.path.abspath(load_path)
+        if not os.path.isfile(load_path):
+            print("[Err]: invalid ckpt path: {:s}"
+                  .format(load_path))
         load_net = torch.load(load_path)
         load_net_clean = OrderedDict()  # remove unnecessary 'module.'
         for k, v in load_net.items():

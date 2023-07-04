@@ -11,7 +11,7 @@ import time
 from collections import OrderedDict
 from datetime import datetime
 from shutil import get_terminal_size
-
+import time
 import cv2
 import numpy as np
 import torch
@@ -1328,6 +1328,44 @@ def rename_LPs(root_dir):
             p_bar.update()
 
 
+def process_no_suffix_files(dir_path, ext=".jpg"):
+    """
+    @param dir_path:
+    @param ext:
+    @return:
+    """
+    dir_path = os.path.abspath(dir_path)
+    if not os.path.isdir(dir_path):
+        print("[Err]: invalid dir: {:s}".format(dir_path))
+        exit(-1)
+
+    no_suffix_file_paths = [x for x in os.listdir(dir_path)
+                            if os.path.splitext(x)[-1] == ""]
+    print("[Info]: find {:d} files without suffix".format(len(no_suffix_file_paths)))
+
+    with tqdm(total=len(no_suffix_file_paths)) as p_bar:
+        for old_name in no_suffix_file_paths:
+            old_path = dir_path + "/" + old_name
+            if not os.path.isfile(old_path):
+                print("\n[Warning]: invalid old file path: {:s}\n"
+                      .format(old_path))
+                p_bar.update()
+                continue
+            fields = old_name.split("_")
+            plate_number = fields[0]
+            plate_color = fields[1]
+            plate_layer = fields[2]
+            old_base_name = "_".join([plate_number, plate_color, plate_layer])
+            time_str = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
+            time.sleep(0.005)
+            new_name = old_base_name + "_" + time_str + ext
+            new_path = dir_path + "/" + new_name
+            os.rename(old_path, new_path)
+            print("\n--> {:s} [renamed to] {:s} in {:s}\n"
+                  .format(old_name, new_name, dir_path))
+            p_bar.update()
+
+
 if __name__ == "__main__":
     # gen_HQs(img_path_list_f="../files/train_crnn_file_list221230.txt",
     #         HQ_dir="../../../HQ")
@@ -1372,8 +1410,13 @@ if __name__ == "__main__":
     # ----------
     # rename_LPs(root_dir="../../../img2img/")
     # gen_lost_LQs(root_dir="../../../img2img")
+    # filter_HQLQ_pairs(root_dir="../../../img2img/")
+    # split_and_statistics(root_dir="../../../img2img/")
+    # gen_lost_LQs(root_dir="../../../img2img")
+
+    process_no_suffix_files(dir_path="../../../img2img/HQ")
+    gen_lost_LQs(root_dir="../../../img2img")
     filter_HQLQ_pairs(root_dir="../../../img2img/")
     split_and_statistics(root_dir="../../../img2img/")
-    # gen_lost_LQs(root_dir="../../../img2img")
 
     print("--> Done.")

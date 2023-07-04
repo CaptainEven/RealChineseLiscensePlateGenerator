@@ -426,7 +426,8 @@ def test_text2img(args, model, sde):
                                               white_special,
                                               green_special,
                                               black_special)
-            print("--> generating {:s}...".format(text))
+            print("--> generating {:s}, {:3d}/{:3d}..."
+                  .format(text, i + 1, args.num))
             text2img(text, model, generator, dataset_dir, n_gen=10)
 
 
