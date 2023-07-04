@@ -133,8 +133,9 @@ class BaseModel:
             network = network.module
         load_path = os.path.abspath(load_path)
         if not os.path.isfile(load_path):
-            print("[Err]: invalid ckpt path: {:s}"
+            print("[Err]: invalid ckpt path: {:s}, exit now!"
                   .format(load_path))
+            exit(-1)
         load_net = torch.load(load_path)
         load_net_clean = OrderedDict()  # remove unnecessary 'module.'
         for k, v in load_net.items():

@@ -41,7 +41,7 @@ parser.add_argument("--text",
                     help="")
 parser.add_argument("--num",
                     type=int,
-                    default=100,
+                    default=200,
                     help="")
 parser.add_argument("--list_file",
                     type=str,

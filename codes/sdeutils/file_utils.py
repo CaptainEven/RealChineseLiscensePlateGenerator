@@ -1328,7 +1328,7 @@ def rename_LPs(root_dir):
             p_bar.update()
 
 
-def process_no_suffix_files(dir_path, ext=".jpg"):
+def rename_no_suffix_files(dir_path, ext=".jpg"):
     """
     @param dir_path:
     @param ext:
@@ -1414,7 +1414,7 @@ if __name__ == "__main__":
     # split_and_statistics(root_dir="../../../img2img/")
     # gen_lost_LQs(root_dir="../../../img2img")
 
-    process_no_suffix_files(dir_path="../../../img2img/HQ")
+    rename_no_suffix_files(dir_path="../../../img2img/HQ")
     gen_lost_LQs(root_dir="../../../img2img")
     filter_HQLQ_pairs(root_dir="../../../img2img/")
     split_and_statistics(root_dir="../../../img2img/")
