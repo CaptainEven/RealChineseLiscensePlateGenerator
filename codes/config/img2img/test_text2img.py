@@ -387,9 +387,10 @@ def test_text2img(args, model, sde):
                                     '../../LicensePlateGenerator/font_model')
 
     if args.type == "single":
-        print("[Info]: generation from single...")
+        print("[Info]: single mode")
         text2img(args.text, model, generator, dataset_dir, n_gen=10)
     elif args.type == "list":
+        print("[Info]: list mode")
         print("[Info]: generation from file list...")
         list_file_path = os.path.abspath(args.list_file)
         if not os.path.isfile(list_file_path):
@@ -410,6 +411,7 @@ def test_text2img(args, model, sde):
                       .format(text, file_i, n_files))
                 text2img(text, model, generator, dataset_dir, n_gen=10)
     elif args.type == "instant":
+        print("[Info]: instant mode")
         color = ["blue", "yellow", "white", "black", "green"]
         # layer = ["single", "double"]
         layer = ["single"]
