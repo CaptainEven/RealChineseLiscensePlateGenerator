@@ -1357,7 +1357,7 @@ def process_no_suffix_files(dir_path, ext=".jpg"):
             plate_layer = fields[2]
             old_base_name = "_".join([plate_number, plate_color, plate_layer])
             time_str = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
-            time.sleep(0.005)
+            time.sleep(1)
             new_name = old_base_name + "_" + time_str + ext
             new_path = dir_path + "/" + new_name
             os.rename(old_path, new_path)
