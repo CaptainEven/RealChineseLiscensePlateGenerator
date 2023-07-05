@@ -25,6 +25,8 @@ try:
 except ImportError:
     from yaml import Dumper, Loader
 
+import xml.etree.ElementTree as ET
+from collections import Counter
 from tqdm import tqdm
 
 from LicensePlateGenerator.generate_multi_plate import MultiPlateGenerator
@@ -827,7 +829,15 @@ def gen_lost_LQs(root_dir, ext=".jpg"):
                     plate_layers = 0
 
                 lq_path = LQ_dir + "/{:s}".format(hq_name)
-                lq_img = generator.generate_plate_special(plate_number, plate_color, plate_layers)
+                try:
+                    lq_img = generator.generate_plate_special(plate_number,
+                                                              plate_color,
+                                                              plate_layers)
+                except Exception as e:
+                    print("\n", e)
+                    print("\n[Warning]: generated {:s} failed!\n"
+                          .format(hq_name))
+                    continue
                 if lq_img is None:
                     print("\n[Err]: {:s} generated failed!\n"
                           .format(hq_name))
@@ -1366,6 +1376,379 @@ def rename_no_suffix_files(dir_path, ext=".jpg"):
             p_bar.update()
 
 
+global plate_color_mapping
+plate_color_mapping = {
+    "蓝": "blue",
+    "白": "white",
+    "黑": "black",
+    "绿": "green",
+    "黄": "yellow",
+}
+
+
+def parseXmlForPlate(img_path,
+                     xml_path,
+                     dst_dir,
+                     counter,
+                     ext=".jpg",
+                     clock_wise=True,
+                     split_dir=False,
+                     logging=True):
+    """
+    Args:
+        img_path:
+        xml_path:
+        dst_dir:
+        counter:
+        ext,
+        clock_wise:
+        split_dir:
+        logging:
+    Returns:
+    """
+    assert os.path.isdir(dst_dir)
+
+    img_path = os.path.abspath(img_path)
+    if not os.path.isfile(img_path):
+        print("[Err]: invalid jpg path: {:s}.".format(os.path.abspath(img_path)))
+        return -1
+    xml_path = os.path.abspath(xml_path)
+    if not os.path.isfile(xml_path):
+        print("\n[Warning]: invalid xml path {:s}.\n".format(os.path.abspath(xml_path)))
+        return -1
+
+    ## --------- Read in image
+    img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+    if img is None:
+        print("[Err]: read img {:s} failed!"
+              .format(img_path))
+        return -1
+
+    ## ---------- parse xml
+    with open(xml_path, "r", encoding="utf-8") as f:
+        xml_info = f.read()
+
+        try:
+            root = ET.fromstring(xml_info)
+        except Exception as e:
+            print("[Err]: can not parse xml file: {:s}".format(xml_path))
+
+        # obj = root.find('markNode')
+        # if obj is None:
+        #     print("[Err]: find markNode failed!")
+        #     return
+
+        for obj in root.iter('object'):  # 遍历object, 每个object代表一个标注目标
+            target_type = obj.find('targettype')
+            target_name = target_type.text
+            if target_name != "plate":  # 读取车牌对象
+                continue
+
+            ## ----- 解析车牌属性
+            color_node = obj.find("color")
+            if color_node is None:
+                print("[Warning]: can not find color!")
+                continue
+            plate_color = color_node.text
+            plate_color = plate_color_mapping[plate_color]
+
+            type_node = obj.find("mode")
+            if type_node is None:
+                print("[Warning]: can not find type!")
+                continue
+            plate_type = type_node.text
+
+            ## ----- 解析车牌号码
+            char_nodes = obj.find("characters")
+            if char_nodes is None:
+                print("[Warning]: can not find character!")
+                continue
+
+            plate_number = []
+            for char in char_nodes.iter("char"):
+                char = char.find("data").text
+                plate_number.append(char)
+            n_chars = len(plate_number)
+            plate_number = "".join(plate_number)
+
+            ## ----- 解析4个角点: 左上角逆时针
+            vertex_nodes = obj.find("vertexs")
+            if vertex_nodes is None:
+                print("[Warning]: can not find vertex!")
+                continue
+
+            vertices = []
+            for vertex in vertex_nodes.iter("vertex"):
+                x = int(vertex.find("x").text)
+                y = int(vertex.find("y").text)
+                vertices.append([x, y])
+            assert len(vertices) == 4
+
+            # draw4Corners(img, vertices)
+            # cv2.imwrite(vis_path, img)
+            # print("{:s} written.".format(vis_path))
+
+            # 基于4个角点Warp到正视图
+            if len(vertices) != 4:
+                print("[Warning]: corners number is not 4!.")
+                continue
+
+            vertex_arr = np.array(vertices)
+            pt_ord = [min(vertex_arr[:, 0]), min(vertex_arr[:, 1])]
+            pt_ord[0] = pt_ord[0] if pt_ord[0] >= 0 else 0
+            pt_ord[1] = pt_ord[1] if pt_ord[1] >= 0 else 0
+
+            rect_w = max(vertex_arr[:, 0]) - min(vertex_arr[:, 0])
+            rect_h = max(vertex_arr[:, 1]) - min(vertex_arr[:, 1])
+            if rect_w <= 0 or rect_h <= 0:
+                print("[Warning]: invalid Rect, rect_w: {:d}, rect_h: {:d}"
+                      .format(rect_w, rect_h))
+                continue
+
+            rect = img[pt_ord[1]: pt_ord[1] + rect_h, pt_ord[0]: pt_ord[0] + rect_w, :]
+            h, w = rect.shape[:2]
+            if h == 0 or w == 0:
+                print("[Warning]: invalid Rect of plate!")
+                continue
+
+            src_pts, dst_pts = [], []
+
+            if plate_type == "单":
+                for i, vertex in enumerate(vertex_arr):
+                    src_pts.append([vertex[0] - pt_ord[0], vertex[1] - pt_ord[1]])  # 转换到车牌局部坐标系
+
+                    if clock_wise:  # 顺时针标注的4角点
+                        if i == 0:
+                            dst_pts.append([0, 0])
+                        elif i == 1:
+                            dst_pts.append([191, 0])
+                        elif i == 2:
+                            dst_pts.append([191, 63])
+                        elif i == 3:
+                            dst_pts.append([0, 63])
+
+                    else:  # 逆时针标注的4角点
+                        if i == 0:
+                            dst_pts.append([0, 0])
+                        elif i == 1:
+                            dst_pts.append([0, 63])
+                        elif i == 2:
+                            dst_pts.append([191, 63])
+                        elif i == 3:
+                            dst_pts.append([191, 0])
+
+            elif plate_type == "双":
+                for i, vertex in enumerate(vertex_arr):
+                    src_pts.append([vertex[0] - pt_ord[0], vertex[1] - pt_ord[1]])  # 转换到车牌局部坐标系
+
+                    if clock_wise:
+                        if i == 0:
+                            dst_pts.append([0, 0])
+                        elif i == 1:
+                            dst_pts.append([191, 0])
+                        elif i == 2:
+                            dst_pts.append([191, 95])
+                        elif i == 3:
+                            dst_pts.append([0, 95])
+
+                    else:
+                        if i == 0:
+                            dst_pts.append([0, 0])
+                        elif i == 1:
+                            dst_pts.append([0, 95])
+                        elif i == 2:
+                            dst_pts.append([191, 95])
+                        elif i == 3:
+                            dst_pts.append([191, 0])
+
+            if not (len(src_pts) == 4 and len(dst_pts)) == 4:
+                print("[Warning]: invalid src_pts or dst_pts!")
+                continue
+
+            src_pts, dst_pts = np.array(src_pts, dtype=np.float32), np.array(dst_pts, dtype=np.float32)
+            mat = cv2.getPerspectiveTransform(src_pts, dst_pts)
+
+            if plate_type == "单":
+                try:
+                    plate_img_warped = cv2.warpPerspective(rect, mat, (192, 64))
+                except Exception as e:
+                    print(e)
+                    continue
+            elif plate_type == "双":
+                try:
+                    plate_img_warped = cv2.warpPerspective(rect, mat, (192, 96))
+                except Exception as e:
+                    print(e)
+                    continue
+
+            ## ----- save warped image
+            if plate_type == "单":
+                plate_type = "single"
+            elif plate_type == "双":
+                plate_type = "double"
+
+            if split_dir:
+                save_dir = dst_dir + "/" + plate_number
+                if not os.path.isdir(save_dir):
+                    os.makedirs(save_dir)
+            else:
+                save_dir = dst_dir
+
+            pl_number = plate_number.replace("*", "_")  # .replace("~", ".")
+            time_str = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
+            time.sleep(0.1)
+            # save_path = save_dir + "/" \
+            #             + pl_number \
+            #             + "_" + plate_color \
+            #             + "_" + plate_type \
+            #             + "_" + str(counter["id"]) + ext
+            save_path = save_dir + "/" \
+                        + pl_number \
+                        + "_" + plate_color \
+                        + "_" + plate_type \
+                        + "_" + time_str + ext
+            if not os.path.isfile(save_path):
+                # cv2.imwrite(save_path, plate_img_warped)
+                cv2.imencode(ext, plate_img_warped)[1].tofile(save_path)
+                print("\n--> {:s} saved\n".format(save_path))
+
+            if logging:
+                print("\n")
+                print("Rect width: ", rect_w)
+                print("Rect height: ", rect_h)
+                print("车牌类型: ", plate_type)
+                print("车牌颜色: ", plate_color)
+                print("车牌号码: {:s}, {:d}字符".format(plate_number, n_chars))
+                print("\n")
+
+            ## ----- sample counter updating
+            counter.update(["id"])
+
+        return 0
+
+
+def parsePlates(src_dir,
+                dst_dir,
+                clock_wise=False,
+                ext=".jpg",
+                split_dir=False,
+                logging=True):
+    """
+    Args:
+        src_dir:
+        dst_dir:
+        clock_wise: True: clock_wise | False: anti-clock_wise
+        ext:
+        split_dir:
+    Returns:
+    """
+    src_dir = os.path.abspath(src_dir)
+    if not os.path.isdir(src_dir):
+        print("[Err]: invalid src dir.")
+        return
+
+    dst_dir = os.path.abspath(dst_dir)
+    if os.path.isdir(dst_dir):
+        shutil.rmtree(dst_dir)
+    os.makedirs(dst_dir)
+    print("{:s} made.".format(dst_dir))
+
+    img_list = []
+    find_files(src_dir, img_list, ext=ext)
+    img_list.sort()
+    xml_list = [x.replace(ext, ".xml") for x in img_list]
+
+    item_list = [(img_path, xml_path) for img_path, xml_path in zip(img_list, xml_list)]
+    print("[Info]: Total {:d} valid items found.".format(len(item_list)))
+
+    counter = Counter({"id": 0})
+    with tqdm(total=len(item_list)) as p_bar:
+        for i, (img_path, xml_path) in enumerate(item_list):
+            ## ----- Parsing & Warping
+            ret = parseXmlForPlate(img_path,
+                                   xml_path,
+                                   dst_dir,
+                                   counter,
+                                   ext,
+                                   clock_wise,
+                                   split_dir,
+                                   logging)
+            # if ret < 0:
+            #     p_bar.update()
+            #     continue
+            ## -----
+
+            p_bar.update()
+
+
+def run_parsing_plates(src_root_dir,
+                       dst_root_dir,
+                       clock_wise=False):
+    """
+    @param src_root_dir:
+    @param dst_root_dir:
+    @param clock_wise:
+    @return:
+    """
+    src_root_dir = os.path.abspath(src_root_dir)
+    if not os.path.abspath(src_root_dir):
+        print("[Err]: invalid src root dir: {:s}"
+              .format(src_root_dir))
+        exit(-1)
+    dst_root_dir = os.path.abspath(dst_root_dir)
+    if not os.path.abspath(dst_root_dir):
+        try:
+            os.makedirs(dst_root_dir)
+        except Exception as e:
+            print(e)
+            exit(-1)
+
+    sub_src_dirs = [src_root_dir + "/" + x for x in os.listdir(src_root_dir)]
+    for sub_src_dir in sub_src_dirs:
+        dir_name = os.path.split(sub_src_dir)[-1]
+        sub_dst_dir = dst_root_dir + "/" + dir_name
+        print("--> processing {:s}...".format(sub_src_dir))
+        parsePlates(src_dir=sub_src_dir,
+                    dst_dir=sub_dst_dir,
+                    clock_wise=clock_wise)
+
+
+def cp_files(src_dir, dst_dir, ext=".jpg"):
+    """
+    @param src_dir:
+    @param dst_dir:
+    @param ext:
+    @return:
+    """
+    src_dir = os.path.abspath(src_dir)
+    if not os.path.abspath(src_dir):
+        print("[Err]: invalid src dir: {:s}".format(src_dir))
+        exit(-1)
+
+    dst_dir = os.path.abspath(dst_dir)
+    if not os.path.abspath(dst_dir):
+        print("[Err]: invalid dst dir: {:s}".format(dst_dir))
+        exit(-1)
+
+    src_file_paths = []
+    find_files(src_dir, src_file_paths, ext)
+    print("[Info]: find {:d} {:s} files"
+          .format(len(src_file_paths), ext))
+
+    for src_f_path in src_file_paths:
+        if not os.path.isfile(src_f_path):
+            print("[Warning]: invalid file path: {:s}"
+                  .format(src_f_path))
+            continue
+        src_f_name = os.path.split(src_f_path)[-1]
+
+        dst_f_path = dst_dir + "/" + src_f_name
+        if not os.path.isfile(dst_f_path):
+            shutil.copy(src_f_path, dst_dir)
+            print("--> {:s} [cp to] {:s}"
+                  .format(src_f_name, dst_dir))
+
+
 if __name__ == "__main__":
     # gen_HQs(img_path_list_f="../files/train_crnn_file_list221230.txt",
     #         HQ_dir="../../../HQ")
@@ -1414,7 +1797,15 @@ if __name__ == "__main__":
     # split_and_statistics(root_dir="../../../img2img/")
     # gen_lost_LQs(root_dir="../../../img2img")
 
-    rename_no_suffix_files(dir_path="../../../img2img/HQ")
+    # rename_no_suffix_files(dir_path="../../../img2img/HQ")
+    # gen_lost_LQs(root_dir="../../../img2img")
+    # filter_HQLQ_pairs(root_dir="../../../img2img/")
+    # split_and_statistics(root_dir="../../../img2img/")
+
+    # run_parsing_plates(src_root_dir="/mnt/diske/lyw/NewlyLabeledImages",
+    #                    dst_root_dir="/mnt/diske/lyw/NewlyParsedImages")
+    cp_files(src_dir="/mnt/diske/lyw/NewlyParsedImages",
+             dst_dir="../../../img2img/HQ")
     gen_lost_LQs(root_dir="../../../img2img")
     filter_HQLQ_pairs(root_dir="../../../img2img/")
     split_and_statistics(root_dir="../../../img2img/")
