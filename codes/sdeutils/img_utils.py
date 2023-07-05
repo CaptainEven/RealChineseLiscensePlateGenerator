@@ -31,7 +31,6 @@ def _is_numpy_image(img):
 
 
 def to_pil_image(pic, mode=None):
-
     if not (_is_numpy_image(pic) or _is_tensor_image(pic)):
         raise TypeError("pic should be Tensor or ndarray. Got {}.".format(type(pic)))
 
@@ -135,9 +134,13 @@ def to_tensor(pic):
 
 def tensor2img(tensor, out_type=np.uint8, min_max=(0, 1)):
     """
-    Converts a torch Tensor into an image Numpy array
+    onverts a torch Tensor into an image Numpy array
     Input: 4D(B,(3/1),H,W), 3D(C,H,W), or 2D(H,W), any range, RGB channel order
     Output: 3D(H,W,C) or 2D(H,W), [0,255], np.uint8 (default)
+    @param tensor:
+    @param out_type:
+    @param min_max:
+    @return:
     """
     tensor = tensor.squeeze().float().cpu().clamp_(*min_max)  # clamp
     tensor = (tensor - min_max[0]) / (min_max[1] - min_max[0])  # to range [0,1]
@@ -152,11 +155,9 @@ def tensor2img(tensor, out_type=np.uint8, min_max=(0, 1)):
     elif n_dim == 2:
         img_np = tensor.numpy()
     else:
-        raise TypeError(
-            "Only support 4D, 3D and 2D tensor. But received with dimension: {:d}".format(
-                n_dim
-            )
-        )
+        raise TypeError("Only support 4D, 3D and 2D tensor."
+                        " But received with dimension: {:d}"
+                        .format(n_dim))
     if out_type == np.uint8:
         img_np = (img_np * 255.0).round()
         # Important. Unlike matlab, numpy.unit8() WILL NOT round by default.
@@ -186,6 +187,11 @@ def img2tensor(img):
 
 
 def calculate_psnr(img1, img2):
+    """
+    @param img1:
+    @param img2:
+    @return:
+    """
     # img1 and img2 have range [0, 255]
     img1 = img1.astype(np.float64)
     img2 = img2.astype(np.float64)
@@ -196,6 +202,11 @@ def calculate_psnr(img1, img2):
 
 
 def ssim(img1, img2):
+    """
+    @param img1:
+    @param img2:
+    @return:
+    """
     C1 = (0.01 * 255) ** 2
     C2 = (0.03 * 255) ** 2
 
@@ -213,14 +224,14 @@ def ssim(img1, img2):
     sigma2_sq = cv2.filter2D(img2 ** 2, -1, window)[5:-5, 5:-5] - mu2_sq
     sigma12 = cv2.filter2D(img1 * img2, -1, window)[5:-5, 5:-5] - mu1_mu2
 
-    ssim_map = ((2 * mu1_mu2 + C1) * (2 * sigma12 + C2)) / (
-        (mu1_sq + mu2_sq + C1) * (sigma1_sq + sigma2_sq + C2)
-    )
+    ssim_map = ((2 * mu1_mu2 + C1) * (2 * sigma12 + C2)) \
+               / ((mu1_sq + mu2_sq + C1) * (sigma1_sq + sigma2_sq + C2))
     return ssim_map.mean()
 
 
 def calculate_ssim(img1, img2):
-    """calculate SSIM
+    """
+    calculate SSIM
     the same outputs as MATLAB's
     img1, img2: [0, 255]
     """
@@ -238,3 +249,35 @@ def calculate_ssim(img1, img2):
             return ssim(np.squeeze(img1), np.squeeze(img2))
     else:
         raise ValueError("Wrong input image dimensions.")
+
+
+def rmse(img1: np.ndarray, img2: np.ndarray, max_p: int = 4095) -> float:
+    """
+    Root Mean Squared Error
+    Calculated individually for all bands, then averaged
+    """
+    if not img1.shape == img2.shape:
+        raise ValueError("Input images must have the same dimensions.")
+
+    img1 = img1.astype(np.float32)
+
+    # if image is a gray image - add empty 3rd dimension for the .shape[2] to exist
+    if img1.ndim == 2:
+        img1 = np.expand_dims(img1, axis=-1)
+
+    rmse_bands = []
+    diff = img1 - img2
+    mse_bands = np.mean(np.square(diff / max_p), axis=(0, 1))
+    rmse_bands = np.sqrt(mse_bands)
+    return np.mean(rmse_bands)
+
+
+def mse(img1, img2):
+    """
+    @param img1:
+    @param img2:
+    @return:
+    """
+    err = np.sum((img1.astype("float") - img2.astype("float")) ** 2)
+    err /= float(img1.shape[0] * img1.shape[1])
+    return err

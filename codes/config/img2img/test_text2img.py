@@ -22,6 +22,7 @@ sys.path.insert(0, "../../")
 import codes.sdeutils as util
 from codes.data import create_dataloader, create_dataset
 from codes.data.util import bgr2ycbcr
+from codes.sdeutils.img_utils import calculate_psnr, calculate_ssim, rmse, mse
 
 import cv2
 from LicensePlateGenerator.generate_multi_plate import MultiPlateGenerator
@@ -324,45 +325,55 @@ def text2img(txt, model, generator, dataset_dir, n_gen=10):
     plate_layers = fields[2]
     is_double = plate_layers == "double"
     img_name = txt
-    LQ = generator.generate_plate_special(plate_number=plate_number,
-                                          bg_color=plate_color,
-                                          is_double=is_double)
+    LQ_np_bgr = generator.generate_plate_special(plate_number=plate_number,
+                                                 bg_color=plate_color,
+                                                 is_double=is_double)
     model_img_path = "/mnt/diske/{:s}.png".format(plate_number)
-    cv2.imwrite(model_img_path, LQ)
+    cv2.imwrite(model_img_path, LQ_np_bgr)
     # print("[Info]: model image(LQ) {:s} saved".format(model_img_path))
 
     # ---------- Generate HQ img
-    if plate_layers == "single":
-        h, w, c = LQ.shape
+    if plate_layers == "single":  # single layer license plate image
+        h, w, c = LQ_np_bgr.shape
         if w != 192 or h != 64:
-            LQ = cv2.resize(LQ, (192, 64), cv2.INTER_LINEAR)  # BGR
-            LQ = LQ.astype(np.float32) / 255.0  # normalize to [0, 1]
+            LQ_np_bgr = cv2.resize(LQ_np_bgr, (192, 64), cv2.INTER_LINEAR)  # BGR
 
-            # ---------- BGR to RGB, HWC to CHW, numpy to tensor
-            if LQ.shape[2] == 3:
-                LQ = LQ[:, :, [2, 1, 0]]  # BGR2RGB
-            LQ = torch.from_numpy(np.ascontiguousarray(np.transpose(LQ, (2, 0, 1)))).float()
-            LQ = LQ.unsqueeze(0)  # CHW -> NCHW
+        # normalize to [0, 1]
+        LQ = LQ_np_bgr.astype(np.float32) / 255.0
 
-            with tqdm(total=n_gen) as p_bar:
-                for i in range(n_gen):
-                    # ---------- Inference
-                    noisy_state = sde.noise_state(LQ)
-                    model.feed_data(noisy_state, LQ)
-                    model.test(sde, save_states=True)
+        # ---------- BGR to RGB, HWC to CHW, numpy to tensor
+        if LQ.shape[2] == 3:
+            LQ = LQ[:, :, [2, 1, 0]]  # BGR2RGB
+        LQ = torch.from_numpy(np.ascontiguousarray(np.transpose(LQ, (2, 0, 1)))).float()
+        LQ = LQ.unsqueeze(0)  # CHW -> NCHW
+        with tqdm(total=n_gen) as p_bar:
+            for i in range(n_gen):
+                # ---------- Inference
+                noisy_state = sde.noise_state(LQ)
+                model.feed_data(noisy_state, LQ)
+                model.test(sde, save_states=True)
 
-                    # ---------- Get output
-                    visuals = model.get_current_visuals(need_GT=False)
-                    output = visuals["Output"]
-                    output = util.tensor2img(output.squeeze())  # uint8
+                # ---------- Get output
+                visuals = model.get_current_visuals(need_GT=False)  # gpu -> cpu
+                output = visuals["Output"]
+                HQ = util.tensor2img(output.squeeze())  # uint8
 
-                    # ---------- Save output
-                    save_img_path = dataset_dir + "/" \
-                                    + img_name + "_GEN_{:d}.png".format(i + 1)
-                    save_img_path = os.path.abspath(save_img_path)
-                    cv2.imwrite(save_img_path, output)
-                    # print("\n--> {:s} generated\n".format(save_img_path))
-                    p_bar.update()
+                # # ---------- Calculate LQ/HQ similarity
+                ssim_val = calculate_ssim(LQ_np_bgr, HQ)
+                # psnr_val = calculate_psnr(LQ_np_bgr, HQ)
+                # rmse_val = rmse(LQ_np_bgr, HQ)
+
+                # ---------- Save output
+                # save_img_path = dataset_dir + "/" \
+                #                 + img_name + "_GEN_{:d}.png" \
+                #                     .format(i + 1)
+                save_img_path = dataset_dir + "/" \
+                                + img_name + "_GEN_{:d}_ssim{:.3f}.png" \
+                                    .format(i + 1, ssim_val)
+                save_img_path = os.path.abspath(save_img_path)
+                cv2.imwrite(save_img_path, HQ)
+                # print("\n--> {:s} generated\n".format(save_img_path))
+                p_bar.update()
 
 
 def test_text2img(args, model, sde):
@@ -428,10 +439,10 @@ def test_text2img(args, model, sde):
                                               black_special)
             print("--> generating {:s}, {:3d}/{:3d}..."
                   .format(text, i + 1, args.num))
-            text2img(text, model, generator, dataset_dir, n_gen=10)
+            text2img(text, model, generator, dataset_dir, n_gen=5)
 
 
 if __name__ == "__main__":
     test_text2img(args, model, sde)
     viz_txt2img_set(src_dir="../../../results/img2img/img_translate",
-                    viz_dir="/mnt/diske/vis_plate_gen_9")
+                    viz_dir="/mnt/diske/vis_plate_gen_10")
