@@ -359,21 +359,24 @@ def text2img(txt, model, generator, dataset_dir, n_gen=10):
                 HQ = util.tensor2img(output.squeeze())  # uint8
 
                 # # ---------- Calculate LQ/HQ similarity
-                ssim_val = calculate_ssim(LQ_np_bgr, HQ)
+                # ssim_val = calculate_ssim(LQ_np_bgr, HQ)
                 # psnr_val = calculate_psnr(LQ_np_bgr, HQ)
                 # rmse_val = rmse(LQ_np_bgr, HQ)
 
                 # ---------- Save output
-                # save_img_path = dataset_dir + "/" \
-                #                 + img_name + "_GEN_{:d}.png" \
-                #                     .format(i + 1)
                 save_img_path = dataset_dir + "/" \
-                                + img_name + "_GEN_{:d}_ssim{:.3f}.png" \
-                                    .format(i + 1, ssim_val)
+                                + img_name + "_GEN_{:d}.png" \
+                                    .format(i + 1)
+                # save_img_path = dataset_dir + "/" \
+                #                 + img_name + "_GEN_{:d}_ssim{:.3f}.png" \
+                #                     .format(i + 1, ssim_val)
                 save_img_path = os.path.abspath(save_img_path)
                 cv2.imwrite(save_img_path, HQ)
                 # print("\n--> {:s} generated\n".format(save_img_path))
                 p_bar.update()
+    elif plate_layers == "double":
+        print("[Warning]: double not surported now!")
+        return
 
 
 def test_text2img(args, model, sde):
@@ -445,4 +448,4 @@ def test_text2img(args, model, sde):
 if __name__ == "__main__":
     test_text2img(args, model, sde)
     viz_txt2img_set(src_dir="../../../results/img2img/img_translate",
-                    viz_dir="/mnt/diske/vis_plate_gen_10")
+                    viz_dir="/mnt/diske/vis_plate_gen_9")
