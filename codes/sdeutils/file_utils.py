@@ -797,7 +797,7 @@ def gen_lost_LQs(root_dir, ext=".jpg"):
                     continue
 
                 if plate_layers == "double":
-                    print("\n[Warning]: found double license plate {:s}!\n".format(hq_name))
+                    print("\n[Warning]: found [double] license plate {:s}!\n".format(hq_name))
                     p_bar.update()
                     continue
 
