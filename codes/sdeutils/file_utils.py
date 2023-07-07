@@ -1813,13 +1813,13 @@ if __name__ == "__main__":
     # split_and_statistics(root_dir="../../../img2img/")
 
     # ---------
-    parsePlates(src_dir="/mnt/diske/lyw/NewlyLabeledImages/huangpai",
-                dst_dir="/mnt/diske/lyw/NewlyParsedImages/huangpai",
-                clock_wise=False)
-    cp_files(src_dir="/mnt/diske/lyw/NewlyParsedImages/huangpai",
-             dst_dir="../../../img2img/HQ")
-    gen_lost_LQs(root_dir="../../../img2img")
-    filter_HQLQ_pairs(root_dir="../../../img2img/")
+    # parsePlates(src_dir="/mnt/diske/lyw/NewlyLabeledImages/huangpai",
+    #             dst_dir="/mnt/diske/lyw/NewlyParsedImages/huangpai",
+    #             clock_wise=False)
+    # cp_files(src_dir="/mnt/diske/lyw/NewlyParsedImages/huangpai",
+    #          dst_dir="../../../img2img/HQ")
+    # gen_lost_LQs(root_dir="../../../img2img")
+    # filter_HQLQ_pairs(root_dir="../../../img2img/")
     split_and_statistics(root_dir="../../../img2img/")
 
     print("--> Done.")

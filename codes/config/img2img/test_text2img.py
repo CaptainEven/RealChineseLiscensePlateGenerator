@@ -442,10 +442,10 @@ def test_text2img(args, model, sde):
                                               black_special)
             print("--> generating {:s}, {:3d}/{:3d}..."
                   .format(text, i + 1, args.num))
-            text2img(text, model, generator, dataset_dir, n_gen=5)
+            text2img(text, model, generator, dataset_dir, n_gen=3)
 
 
 if __name__ == "__main__":
     test_text2img(args, model, sde)
     viz_txt2img_set(src_dir="../../../results/img2img/img_translate",
-                    viz_dir="/mnt/diske/vis_plate_gen_9")
+                    viz_dir="/mnt/diske/vis_plate_gen_10")
