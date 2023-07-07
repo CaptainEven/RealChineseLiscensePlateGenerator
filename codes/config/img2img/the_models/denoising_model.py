@@ -123,16 +123,15 @@ class DenoisingModel(BaseModel):
         if GT is not None:
             self.state_0 = GT.to(self.device)  # GT
 
-    def optimize_parameters(self, step, time_steps, sde=None):
+    def optimize_parameters(self, step, time_steps, sde=None, scaler=None):
         """
         @param step:
         @param time_steps:
         @param sde:
+        @param scaler:
         @return:
         """
         sde.set_mu(self.condition)
-
-        self.optimizer.zero_grad()
 
         time_steps = time_steps.to(self.device)
 
@@ -145,8 +144,14 @@ class DenoisingModel(BaseModel):
         xt_1_optimum = sde.reverse_optimum_step(self.state, self.state_0, time_steps)
         loss = self.weight * self.loss_fn(xt_1_expection, xt_1_optimum)
 
-        loss.backward()
-        self.optimizer.step()
+        if scaler is not None:
+            scaler.scale(loss).backward()
+            scaler.step(self.optimizer)
+            scaler.update()
+        else:
+            loss.backward()
+            self.optimizer.step()
+        self.optimizer.zero_grad()
         self.ema.update()
 
         # set log

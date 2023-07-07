@@ -14,7 +14,7 @@ import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
 # from IPython import embed
-
+from torch.cuda import amp
 import options as option
 from the_models import create_model
 
@@ -62,6 +62,8 @@ def main():
     parser.add_argument("--local_rank",
                         type=int,
                         default=0)
+    parser.add_argument("--half",
+                        action='store_true')
     args = parser.parse_args()
     opt = option.parse(args.opt, is_train=True)
 
@@ -215,6 +217,9 @@ def main():
     logger.info("Start training from epoch: {:d}, iter: {:d}"
                 .format(start_epoch, current_step))
 
+    if args.half:
+        scaler = amp.GradScaler(enabled=True)
+
     best_psnr = 0.0
     best_iter = 0
     error = mp.Value('b', False)
@@ -233,8 +238,13 @@ def main():
             LQ, GT = train_data["LQ"], train_data["GT"]
             time_steps, states = sde.generate_random_states(x0=GT, mu=LQ)
 
-            model.feed_data(states, LQ, GT)  # xt, mu, x0
-            model.optimize_parameters(current_step, time_steps, sde)
+            if args.half:
+                with amp.autocast(enabled=True):
+                    model.feed_data(states, LQ, GT)  # xt, mu, x0
+                    model.optimize_parameters(current_step, time_steps, sde, scaler)
+            else:
+                model.feed_data(states, LQ, GT)  # xt, mu, x0
+                model.optimize_parameters(current_step, time_steps, sde)
             model.update_learning_rate(current_step,
                                        warmup_iter=opt["train"]["warmup_iter"])
 
