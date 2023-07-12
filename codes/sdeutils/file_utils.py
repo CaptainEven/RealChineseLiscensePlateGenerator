@@ -13,6 +13,7 @@ from datetime import datetime
 from shutil import get_terminal_size
 import time
 import cv2
+import random
 import numpy as np
 import torch
 import torch.nn as nn
@@ -29,8 +30,11 @@ import xml.etree.ElementTree as ET
 from collections import Counter
 from tqdm import tqdm
 
-from LicensePlateGenerator.generate_multi_plate import MultiPlateGenerator
-from LicensePlateGenerator.generate_special_plate import generate_one_plate
+to_be_inserted_path = os.path.abspath("../../")
+sys.path.insert(0, to_be_inserted_path)
+print("[Info]: {:s} inserted".format(to_be_inserted_path))
+from codes.LicensePlateGenerator.generate_multi_plate import MultiPlateGenerator
+from codes.LicensePlateGenerator.generate_special_plate import generate_one_plate
 
 
 def OrderedYaml():
@@ -1749,6 +1753,73 @@ def cp_files(src_dir, dst_dir, ext=".jpg"):
                   .format(src_f_name, dst_dir))
 
 
+def split_to_be_trained_set(file_list_path,
+                            dst_dir,
+                            n_files_per_sub_dir=300):
+    """
+    @param file_list_path:
+    @param dst_dir:
+    @param n_files_per_sub_dir:
+    @return:
+    """
+    file_list_path = os.path.abspath(file_list_path)
+    if not os.path.abspath(file_list_path):
+        print("[Err]: invalid file list path: {:s}"
+              .format(file_list_path))
+        exit(-1)
+
+    dst_dir = os.path.abspath(dst_dir)
+    if not os.path.isdir(dst_dir):
+        print("[Warning]: invalid dst dir: {:s}".format(dst_dir))
+        os.makedirs(dst_dir)
+        print("[Info]: {:s} made".format(dst_dir))
+
+    file_paths_list = []
+    with open(file_list_path, "r", encoding="utf-8") as f:
+
+        for line in f.readlines():
+            f_path = line.strip()
+            file_paths_list.append(f_path)
+
+        n_files = len(file_paths_list)
+        print("[Info]: total {:d} files to be processed..."
+              .format(n_files))
+        n_sub_dirs = n_files // n_files_per_sub_dir + 1
+
+    random.shuffle(file_paths_list)
+    with tqdm(total=n_files) as p_bar:
+        for i, f_path in enumerate(file_paths_list):
+            if not os.path.isfile(f_path):
+                print("[Warning]: {:s} invalid".format(f_path))
+                p_bar.update()
+                continue
+
+            j_th_sub_dir = i // n_files_per_sub_dir
+            sub_dir_path = os.path.abspath(dst_dir + "/{:05d}".format(j_th_sub_dir))
+            if not os.path.isdir(sub_dir_path):
+                os.makedirs(sub_dir_path)
+                print("\n[Info]: {:s} made\n".format(sub_dir_path))
+
+            time_str = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
+            f_base_name = os.path.split(f_path)[-1]
+            fields = f_base_name.split("_")
+            plate_number = fields[0]
+            plate_color = fields[1]
+            if "." in fields[2]:
+                plate_layer, ext = fields[2].split(".")
+            else:
+                plate_layer = fields[2]
+                ext = f_base_name.split(".")[-1]
+            new_f_name = plate_number + "_" + plate_color + "_" + plate_layer \
+                         + "_" + time_str + ".{:s}".format(ext)
+            new_f_path = sub_dir_path + "/{:s}".format(new_f_name)
+            if not os.path.isfile(new_f_path):
+                shutil.copyfile(f_path, new_f_path)
+                # print("\n--> {:s} [cp to] {:s}\n".format(f_base_name, sub_dir_path))
+            time.sleep(0.01)
+            p_bar.update()
+
+
 if __name__ == "__main__":
     # gen_HQs(img_path_list_f="../files/train_crnn_file_list221230.txt",
     #         HQ_dir="../../../HQ")
@@ -1813,13 +1884,17 @@ if __name__ == "__main__":
     # split_and_statistics(root_dir="../../../img2img/")
 
     # ---------
-    # parsePlates(src_dir="/mnt/diske/lyw/NewlyLabeledImages/huangpai",
-    #             dst_dir="/mnt/diske/lyw/NewlyParsedImages/huangpai",
+    # parsePlates(src_dir="/mnt/diske/lyw/NewlyLabeledImages/xin_neng_yuan",
+    #             dst_dir="/mnt/diske/lyw/NewlyParsedImages/xin_neng_yuan",
     #             clock_wise=False)
-    # cp_files(src_dir="/mnt/diske/lyw/NewlyParsedImages/huangpai",
+    # cp_files(src_dir="/mnt/diske/lyw/NewlyParsedImages/xin_neng_yuan",
     #          dst_dir="../../../img2img/HQ")
     # gen_lost_LQs(root_dir="../../../img2img")
     # filter_HQLQ_pairs(root_dir="../../../img2img/")
-    split_and_statistics(root_dir="../../../img2img/")
+    # split_and_statistics(root_dir="../../../img2img/")
+
+    # ----------
+    split_to_be_trained_set(file_list_path="/mnt/diske/zhoukai/normal_plates.list",
+                            dst_dir="/mnt/diske/lyw/ToBeCheckedPlates")
 
     print("--> Done.")

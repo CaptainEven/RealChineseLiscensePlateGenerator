@@ -84,9 +84,7 @@ def main():
         opt["dist"] = True
         opt["dist"] = True
         init_dist()
-        world_size = (
-            torch.distributed.get_world_size()
-        )  # Returns the number of processes in the current process group
+        world_size = (torch.distributed.get_world_size())  # Returns the number of processes in the current process group
         rank = torch.distributed.get_rank()  # Returns the rank of current process group
         # util.set_random_seed(seed)
 
