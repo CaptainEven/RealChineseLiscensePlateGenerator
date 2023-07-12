@@ -15,10 +15,17 @@ from IPython import embed
 import lpips
 from tqdm import tqdm
 
-import options as option
+to_be_inserted_path = os.path.abspath("../../")
+sys.path.insert(0, to_be_inserted_path)
+print("[Info]: {:s} inserted".format(to_be_inserted_path))
+
+to_be_inserted_path = os.path.abspath("../../../")
+sys.path.insert(0, to_be_inserted_path)
+print("[Info]: {:s} inserted".format(to_be_inserted_path))
+
+import codes.config.img2img.options as option
 from the_models import create_model
 
-sys.path.insert(0, "../../")
 import codes.sdeutils as util
 from codes.data import create_dataloader, create_dataset
 from codes.data.util import bgr2ycbcr
@@ -42,7 +49,7 @@ parser.add_argument("--text",
                     help="")
 parser.add_argument("--num",
                     type=int,
-                    default=200,
+                    default=500,
                     help="")
 parser.add_argument("--list_file",
                     type=str,

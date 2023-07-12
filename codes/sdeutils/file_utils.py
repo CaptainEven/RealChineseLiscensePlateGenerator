@@ -1894,7 +1894,13 @@ if __name__ == "__main__":
     # split_and_statistics(root_dir="../../../img2img/")
 
     # ----------
-    split_to_be_trained_set(file_list_path="/mnt/diske/zhoukai/normal_plates.list",
-                            dst_dir="/mnt/diske/lyw/ToBeCheckedPlates")
+    # split_to_be_trained_set(file_list_path="/mnt/diske/zhoukai/normal_plates.list",
+    #                         dst_dir="/mnt/diske/lyw/ToBeCheckedPlates")
+
+    cp_files(src_dir="/mnt/diske/lyw/ToBeCheckedPlates/00000",
+             dst_dir="../../../img2img/HQ")
+    gen_lost_LQs(root_dir="../../../img2img")
+    filter_HQLQ_pairs(root_dir="../../../img2img/")
+    split_and_statistics(root_dir="../../../img2img/")
 
     print("--> Done.")
