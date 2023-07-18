@@ -25,7 +25,7 @@ datasets:
     name: Train_Dataset
     mode: LQGT
     dataroot_GT: ../../img2img/DGN/LR  # GT
-    dataroot_LQ: ../../img2img/DGN/HR
+    dataroot_LQ: ../../img2img/DGN/HR  # HR mapping to LR
 
     use_shuffle: true
     n_workers: 0  # per GPU
