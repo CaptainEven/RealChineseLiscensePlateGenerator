@@ -170,22 +170,26 @@ def main():
                 train_sampler = None
             print("--> total {:d} epochs".format(total_epochs))
 
-            train_loader = create_dataloader(train_set, dataset_opt, opt, train_sampler)
+            train_loader = create_dataloader(train_set,
+                                             dataset_opt,
+                                             opt,
+                                             train_sampler)
             if rank <= 0:
                 logger.info("Number of train images: {:,d}, iters: {:,d}"
                             .format(len(train_set), train_size))
                 logger.info("Total epochs needed: {:d} for iters {:,d}"
                             .format(total_epochs, total_iters))
-        elif phase == "val":
-            val_set = create_dataset(dataset_opt)
-            val_loader = create_dataloader(val_set, dataset_opt, opt, None)
-            if rank <= 0:
-                logger.info("Number of val images in [{:s}]: {:d}"
-                            .format(dataset_opt["name"], len(val_set)))
-        else:
-            raise NotImplementedError("Phase [{:s}] is not recognized.".format(phase))
+        # elif phase == "val":
+        #     val_set = create_dataset(dataset_opt)
+        #     val_loader = create_dataloader(val_set, dataset_opt, opt, None)
+        #     if rank <= 0:
+        #         logger.info("Number of val images in [{:s}]: {:d}"
+        #                     .format(dataset_opt["name"], len(val_set)))
+        # else:
+        #     raise NotImplementedError("Phase [{:s}] is not recognized.".format(phase))
+
     assert train_loader is not None
-    assert val_loader is not None
+    # assert val_loader is not None
 
     #### create model
     model = create_model(opt)
@@ -209,7 +213,7 @@ def main():
                      eps=opt["sde"]["eps"], device=device)
     sde.set_model(model.model)
 
-    scale = opt['degradation']['scale']
+    # scale = opt['degradation']['scale']
 
     #### training
     logger.info("Start training from epoch: {:d}, iter: {:d}"

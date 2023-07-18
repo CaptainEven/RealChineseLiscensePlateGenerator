@@ -9,8 +9,8 @@ import torch
 
 # Files & IO
 
-# IMG_EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP', 'tif']
-IMG_EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG']
+IMG_EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP', 'tif']
+# IMG_EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG']
 
 
 def is_image_file(file_name):
@@ -28,12 +28,15 @@ def _get_paths_from_images(path):
     @return:
     """
     path = os.path.abspath(path)
-    assert os.path.isdir(path), '{:s} is not a valid directory'.format(path)
+    print("[Info]: path: {:s}".format(path))
+
+    assert os.path.isdir(path), '{:s} is not a valid directory'\
+        .format(path)
     images = []
-    for dirpath, _, fnames in sorted(os.walk(path)):
-        for fname in sorted(fnames):
-            if is_image_file(fname):
-                img_path = os.path.join(dirpath, fname)
+    for dir_path, _, f_names in sorted(os.walk(path)):
+        for f_name in sorted(f_names):
+            if is_image_file(f_name):
+                img_path = os.path.join(dir_path, f_name)
                 images.append(img_path)
     assert images, '{:s} has no valid image file'.format(path)
     return images
@@ -49,21 +52,21 @@ def _get_paths_from_lmdb(dataroot):
     return paths, sizes
 
 
-def get_image_paths(data_type, dataroot):
-    '''
+def get_image_paths(data_type, data_root):
+    """
     get image path list
     support lmdb or image files
-    @param data_type:
-    @param dataroot:
-    @return:
-    '''
+    @param data_type: 
+    @param data_root: 
+    @return: 
+    """
     paths, sizes = None, None
-    if dataroot is not None:
+    if data_root is not None:
         if data_type == 'lmdb':
-            paths, sizes = _get_paths_from_lmdb(dataroot)
+            paths, sizes = _get_paths_from_lmdb(data_root)
             return paths, sizes
         elif data_type == 'img':
-            paths = sorted(_get_paths_from_images(dataroot))
+            paths = sorted(_get_paths_from_images(data_root))
             return paths
         else:
             raise NotImplementedError('data_type [{:s}] is not recognized.'.format(data_type))
@@ -267,6 +270,19 @@ def modcrop(img_in, scale):
     return img
 
 
+def random_crop(img, crop_size=(128, 128)):
+    """
+    @param img:
+    @param crop_size:
+    @return:
+    """
+    h, w = img.shape[:2]
+    new_w, new_h = crop_size
+    y = np.random.randint(0, h - new_h)
+    x = np.random.randint(0, w - new_w)
+    img = img[y:y + new_h, x:x + new_w, :]
+    return img
+
 # Functions
 # matlab 'imresize' function, now only support 'bicubic'
 
@@ -339,6 +355,12 @@ def calculate_weights_indices(in_length, out_length, scale, kernel, kernel_width
 
 
 def imresize(img, scale, antialiasing=True):
+    """
+    @param img:
+    @param scale:
+    @param antialiasing:
+    @return:
+    """
     # Now the scale should be the same for H and W
     # input: img: CHW RGB [0,1]
     # output: CHW RGB [0,1] w/o round
