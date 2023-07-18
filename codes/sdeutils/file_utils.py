@@ -1613,7 +1613,15 @@ def parseXmlForPlate(img_path,
                         + "_" + time_str + ext
             if not os.path.isfile(save_path):
                 # cv2.imwrite(save_path, plate_img_warped)
-                cv2.imencode(ext, plate_img_warped)[1].tofile(save_path)
+                if ext == ".jpg":
+                    cv2.imencode(".jpg", plate_img_warped, [int(cv2.IMWRITE_JPEG_QUALITY), 100])[1].tofile(save_path)
+                elif ext == ".png":
+                    # cv2.imencode(".png", plate_img_warped, [cv2.IMWRITE_PNG_COMPRESSION, 0])[1].tofile(save_path)
+                    save_path = save_path.replace(".png", ".jpg")
+                    cv2.imencode(".jpg", plate_img_warped, [int(cv2.IMWRITE_JPEG_QUALITY), 100])[1].tofile(save_path)
+                else:
+                    cv2.imencode(ext, plate_img_warped)[1].tofile(save_path)
+
                 print("\n--> {:s} saved\n".format(save_path))
 
             if logging:
@@ -1816,7 +1824,7 @@ def split_to_be_trained_set(file_list_path,
             if not os.path.isfile(new_f_path):
                 shutil.copyfile(f_path, new_f_path)
                 # print("\n--> {:s} [cp to] {:s}\n".format(f_base_name, sub_dir_path))
-            time.sleep(0.01)
+            time.sleep(0.05)
             p_bar.update()
 
 
@@ -1884,10 +1892,10 @@ if __name__ == "__main__":
     # split_and_statistics(root_dir="../../../img2img/")
 
     # ---------
-    # parsePlates(src_dir="/mnt/diske/lyw/NewlyLabeledImages/xin_neng_yuan",
-    #             dst_dir="/mnt/diske/lyw/NewlyParsedImages/xin_neng_yuan",
+    # parsePlates(src_dir="/mnt/diske/lyw/NewlyLabeledImages/hei",
+    #             dst_dir="/mnt/diske/lyw/NewlyParsedImages/hei",
     #             clock_wise=False)
-    # cp_files(src_dir="/mnt/diske/lyw/NewlyParsedImages/xin_neng_yuan",
+    # cp_files(src_dir="/mnt/diske/lyw/NewlyParsedImages/hei",
     #          dst_dir="../../../img2img/HQ")
     # gen_lost_LQs(root_dir="../../../img2img")
     # filter_HQLQ_pairs(root_dir="../../../img2img/")
@@ -1897,7 +1905,7 @@ if __name__ == "__main__":
     # split_to_be_trained_set(file_list_path="/mnt/diske/zhoukai/normal_plates.list",
     #                         dst_dir="/mnt/diske/lyw/ToBeCheckedPlates")
 
-    cp_files(src_dir="/mnt/diske/lyw/ToBeCheckedPlates/00000",
+    cp_files(src_dir="/mnt/diske/lyw/ToBeCheckedPlates/00010",
              dst_dir="../../../img2img/HQ")
     gen_lost_LQs(root_dir="../../../img2img")
     filter_HQLQ_pairs(root_dir="../../../img2img/")

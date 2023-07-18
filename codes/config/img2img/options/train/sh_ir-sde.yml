@@ -3,7 +3,7 @@ name: ir-sde
 use_tb_logger: true
 model: denoising
 distortion: multi_degerations
-gpu_ids: [1]
+gpu_ids: [7]
 
 sde:
   max_sigma: 10
@@ -53,7 +53,7 @@ network_G:
 
 #### path
 path:
-  pretrain_model_G: ../weights/165000_G.pth
+  pretrain_model_G: ../weights/235000_G.pth
   strict_load: true
   resume_state: # ../states/455000.state
 
