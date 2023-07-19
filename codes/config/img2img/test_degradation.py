@@ -331,4 +331,5 @@ if __name__ == "__main__":
     # test_text2img(args, model, sde)
     run_degradation(model,
                     src_img_dir="/mnt/diske/ROIs",
-                    dst_img_dir="/mnt/diske/lyw/Degradations")
+                    dst_img_dir="/mnt/diske/lyw/Degradations",
+                    ext=".png")

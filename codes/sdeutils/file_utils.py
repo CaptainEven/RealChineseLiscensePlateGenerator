@@ -1908,6 +1908,9 @@ def random_crop_imgs(img_path_list,
                 p_bar.update()
                 continue
 
+            img_name = os.path.split(img_path)[-1]
+            img_ext = "." + img_name.split(".")[-1]
+
             img = cv2.imread(img_path, cv2.IMREAD_COLOR)
             h, w, c = img.shape
             roi = random_crop(img, crop_size)
@@ -1915,8 +1918,14 @@ def random_crop_imgs(img_path_list,
                 print("\n[Warning]: invalid img shape: {:d}×{:d}\n".format(w, h))
                 p_bar.update()
                 continue
-            save_path = dst_dir_path + "/roi_{:04d}.jpg".format(cnt)
-            cv2.imencode(".jpg", roi, [int(cv2.IMWRITE_JPEG_QUALITY), 100])[1].tofile(save_path)
+
+            if img_ext == ".jpg":
+                save_path = dst_dir_path + "/roi_{:04d}.jpg".format(cnt)
+                cv2.imencode(".jpg", roi, [int(cv2.IMWRITE_JPEG_QUALITY), 100])[1].tofile(save_path)
+            elif img_ext == ".png":
+                save_path = dst_dir_path + "/roi_{:04d}.png".format(cnt)
+                cv2.imencode(".png", roi, [cv2.IMWRITE_PNG_COMPRESSION, 0])[1].tofile(save_path)
+
             cnt += 1
             p_bar.update()
 
