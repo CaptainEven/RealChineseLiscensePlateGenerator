@@ -75,18 +75,16 @@ class LQGTDataset(data.Dataset):
 
         # ---------- get GT image
         GT_path = self.GT_paths[idx]
-
-        # return: Numpy float32, HWC, BGR, [0, 1]
-        img_GT = util.read_img(self.GT_env, GT_path, None)
-
-        # ----- random cropping
-        img_GT, (y_min, y_max), (x_min, x_max) = util.random_crop(img_GT, GT_size)
-
-        # ---------- get LR image
         LR_path = self.LR_paths[idx]
 
         # return: Numpy float32, HWC, BGR, [0, 1]
+        img_GT = util.read_img(self.GT_env, GT_path, None)
         img_LR = util.read_img(self.LR_env, LR_path, None)
+
+        assert img_GT.shape == img_LR.shape
+
+        # ----- random cropping
+        img_GT, (y_min, y_max), (x_min, x_max) = util.random_crop(img_GT, GT_size)
 
         # ----- cropping according to GT cropping
         img_LR = img_LR[y_min: y_max, x_min: x_max, :]
