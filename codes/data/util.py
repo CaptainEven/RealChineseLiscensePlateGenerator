@@ -285,12 +285,12 @@ def random_crop(img, crop_size=(128, 128)):
     @return:
     """
     h, w = img.shape[:2]
-    new_w, new_h = crop_size
-    assert (h - new_h) >= 0 and (w - new_w) >= 0
-    y_min = np.random.randint(0, h - new_h)
-    x_min = np.random.randint(0, w - new_w)
-    y_max = y_min + new_h
-    x_max = x_min + new_w
+    crop_w, crop_h = crop_size
+    assert (h - crop_h) >= 0 and (w - crop_w) >= 0
+    y_min = np.random.randint(0, h - crop_h)
+    x_min = np.random.randint(0, w - crop_w)
+    y_max = y_min + crop_h
+    x_max = x_min + crop_w
     img = img[y_min: y_max, x_min: x_max, :]
     return img, (y_min, y_max), (x_min, x_max)
 
