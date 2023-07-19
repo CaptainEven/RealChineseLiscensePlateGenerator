@@ -41,24 +41,13 @@ from gen_random_plate_string import generate_random_plate_text
 parser = argparse.ArgumentParser()
 parser.add_argument("-opt",
                     type=str,
-                    default="./options/test/ir-sde.yml",
+                    default="./options/test/degradation.yml",
                     help="Path to options YMAL file.")
-parser.add_argument("--text",
+parser.add_argument("-s",
+                    "--src_img_dir",
                     type=str,
-                    default="使014578_black_single",
+                    default="",
                     help="")
-parser.add_argument("--num",
-                    type=int,
-                    default=500,
-                    help="")
-parser.add_argument("--list_file",
-                    type=str,
-                    default="./plates.txt",
-                    help="")
-parser.add_argument("--type",
-                    type=str,
-                    default="instant",
-                    help="single | list | instant")
 
 args = parser.parse_args()
 args = edict(vars(args))  # vars()函数返回对象object的属性和属性值的字典对象。
@@ -112,141 +101,6 @@ lpips_fn = lpips.LPIPS(net='alex').to(device)
 scale = opt['degradation']['scale']
 
 
-def run_test_set():
-    """
-    @return:
-    """
-    for test_loader in test_loaders:
-        test_set_name = test_loader.dataset.opt["name"]  # path opt['']
-        logger.info("\nTesting [{:s}]...".format(test_set_name))
-        test_start_time = time.time()
-        dataset_dir = os.path.join(opt["path"]["results_root"], test_set_name)
-        util.mkdir(dataset_dir)
-
-        test_results = OrderedDict()
-        test_results["psnr"] = []
-        test_results["ssim"] = []
-        test_results["psnr_y"] = []
-        test_results["ssim_y"] = []
-        test_results["lpips"] = []
-        test_times = []
-
-        for i, test_data in enumerate(test_loader):
-            single_img_psnr = []
-            single_img_ssim = []
-            single_img_psnr_y = []
-            single_img_ssim_y = []
-            need_GT = False if test_loader.dataset.opt["dataroot_GT"] is None else True
-            img_path = test_data["GT_path"][0] if need_GT else test_data["LQ_path"][0]
-            img_name = os.path.splitext(os.path.basename(img_path))[0]
-
-            #### input dataset_LQ
-            LQ, GT = test_data["LQ"], test_data["GT"]
-            noisy_state = sde.noise_state(LQ)
-
-            model.feed_data(noisy_state, LQ, GT)
-            tic = time.time()
-            model.test(sde, save_states=True)
-            toc = time.time()
-            test_times.append(toc - tic)
-
-            visuals = model.get_current_visuals()
-            SR_img = visuals["Output"]
-            output = util.tensor2img(SR_img.squeeze())  # uint8
-            LQ_ = util.tensor2img(visuals["Input"].squeeze())  # uint8
-            GT_ = util.tensor2img(visuals["GT"].squeeze())  # uint8
-
-            suffix = opt["suffix"]
-            if suffix:
-                save_img_path = os.path.join(dataset_dir, img_name + suffix + ".png")
-            else:
-                save_img_path = os.path.join(dataset_dir, img_name + "_GEN.png")
-            util.save_img(output, save_img_path)
-
-            # remove it if you only want to save output images
-            LQ_img_path = os.path.join(dataset_dir, img_name + "_LQ.png")
-            GT_img_path = os.path.join(dataset_dir, img_name + "_GT.png")
-            util.save_img(LQ_, LQ_img_path)
-            util.save_img(GT_, GT_img_path)
-
-            if need_GT:
-                gt_img = GT_ / 255.0
-                sr_img = output / 255.0
-
-                crop_border = opt["crop_border"] if opt["crop_border"] else scale
-                if crop_border == 0:
-                    cropped_sr_img = sr_img
-                    cropped_gt_img = gt_img
-                else:
-                    cropped_sr_img = sr_img[
-                                     crop_border:-crop_border, crop_border:-crop_border
-                                     ]
-                    cropped_gt_img = gt_img[
-                                     crop_border:-crop_border, crop_border:-crop_border
-                                     ]
-
-                psnr = util.calculate_psnr(cropped_sr_img * 255, cropped_gt_img * 255)
-                ssim = util.calculate_ssim(cropped_sr_img * 255, cropped_gt_img * 255)
-                lp_score = lpips_fn(GT.to(device) * 2 - 1, SR_img.to(device) * 2 - 1).squeeze().item()
-
-                test_results["psnr"].append(psnr)
-                test_results["ssim"].append(ssim)
-                test_results["lpips"].append(lp_score)
-
-                if len(gt_img.shape) == 3:
-                    if gt_img.shape[2] == 3:  # RGB image
-                        sr_img_y = bgr2ycbcr(sr_img, only_y=True)
-                        gt_img_y = bgr2ycbcr(gt_img, only_y=True)
-                        if crop_border == 0:
-                            cropped_sr_img_y = sr_img_y
-                            cropped_gt_img_y = gt_img_y
-                        else:
-                            cropped_sr_img_y = sr_img_y[crop_border:-crop_border,
-                                               crop_border:-crop_border]
-                            cropped_gt_img_y = gt_img_y[crop_border:-crop_border,
-                                               crop_border:-crop_border]
-                        psnr_y = util.calculate_psnr(cropped_sr_img_y * 255, cropped_gt_img_y * 255)
-                        ssim_y = util.calculate_ssim(cropped_sr_img_y * 255, cropped_gt_img_y * 255)
-
-                        test_results["psnr_y"].append(psnr_y)
-                        test_results["ssim_y"].append(ssim_y)
-
-                        logger.info("img{:3d}:{:15s} - PSNR: {:.6f} dB;"
-                                    " SSIM: {:.6f}; LPIPS: {:.6f};"
-                                    " PSNR_Y: {:.6f} dB; "
-                                    "SSIM_Y: {:.6f}.".format(i,
-                                                             img_name,
-                                                             psnr,
-                                                             ssim,
-                                                             lp_score,
-                                                             psnr_y,
-                                                             ssim_y))
-                else:
-                    logger.info("img:{:15s} - PSNR: {:.6f} dB; SSIM: {:.6f}."
-                                .format(img_name, psnr, ssim))
-
-                    test_results["psnr_y"].append(psnr)
-                    test_results["ssim_y"].append(ssim)
-            else:
-                logger.info(img_name)
-
-        ave_lpips = sum(test_results["lpips"]) / len(test_results["lpips"])
-        ave_psnr = sum(test_results["psnr"]) / len(test_results["psnr"])
-        ave_ssim = sum(test_results["ssim"]) / len(test_results["ssim"])
-        logger.info("----Average PSNR/SSIM results for {}----\n\tPSNR: {:.6f} dB;"
-                    " SSIM: {:.6f}\n".format(test_set_name, ave_psnr, ave_ssim))
-
-        if test_results["psnr_y"] and test_results["ssim_y"]:
-            ave_psnr_y = sum(test_results["psnr_y"]) / len(test_results["psnr_y"])
-            ave_ssim_y = sum(test_results["ssim_y"]) / len(test_results["ssim_y"])
-            logger.info("----Y channel, average PSNR/SSIM----\n\tPSNR_Y: {:.6f} dB; "
-                        "SSIM_Y: {:.6f}\n".format(ave_psnr_y, ave_ssim_y))
-
-        logger.info("----average LPIPS\t: {:.6f}\n".format(ave_lpips))
-
-        print(f"average test time: {np.mean(test_times):.4f}")
-
-
 def find_files(root, f_list, ext):
     """
     Find all files with an extension
@@ -264,55 +118,76 @@ def find_files(root, f_list, ext):
             find_files(f_path, f_list, ext)
 
 
-def viz_txt2img_set(src_dir, viz_dir, ext=".png"):
+def run_degradation(model,
+                    src_img_dir,
+                    dst_img_dir,
+                    ext=".jpg"):
     """
-    @param src_dir:
-    @param viz_dir:
+    @param model:
+    @param src_img_dir:
+    @param dst_img_dir:
     @param ext:
     @return:
     """
-    src_dir = os.path.abspath(src_dir)
-    if not os.path.isdir(src_dir):
-        print("[Err]: invalid src dir: {:s}".format(src_dir))
+    src_img_dir = os.path.abspath(src_img_dir)
+    if not os.path.isdir(src_img_dir):
+        print("[Err]: invalid src img dir: {:s}"
+              .format(src_img_dir))
         exit(-1)
 
-    viz_dir = os.path.abspath(viz_dir)
-    if os.path.isdir(viz_dir):
-        shutil.rmtree(viz_dir)
-    os.makedirs(viz_dir)
-    print("[Info]: {:s} made".format(viz_dir))
+    dst_img_dir = os.path.abspath(dst_img_dir)
+    if os.path.isdir(dst_img_dir):
+        shutil.rmtree(dst_img_dir)
+    try:
+        os.makedirs(dst_img_dir)
+    except Exception as e:
+        print(e)
+    else:
+        print("[Info]: {:s} made".format(dst_img_dir))
 
-    all_img_paths = []
-    find_files(src_dir, all_img_paths, ext)
-
-    img_set = set()
-    for img_path in all_img_paths:
-        if not os.path.isfile(img_path):
-            print("[Warning]: {:s} not exist!")
-            continue
-
+    img_paths = []
+    find_files(src_img_dir, img_paths, ext)
+    print("[Info]: find total {:d} imgs of [{:s}] files"
+          .format(len(img_paths), ext))
+    for img_path in img_paths:
         img_name = os.path.split(img_path)[-1]
-        fields = img_name.split("_")
-        assert len(fields) > 3
-        img_set.add("_".join(fields[:-1]))
-    print("[Info]: total {:d} img sets to be visualized"
-          .format(len(img_set)))
-
-    for unique_img_name in img_set:
-        unique_img_paths = [x for x in all_img_paths if unique_img_name in x]
-        img = cv2.imread(unique_img_paths[0], cv2.IMREAD_COLOR)
+        img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+        if img is None:
+            continue
+        print("--> degradate {:s}...".format(img_name))
         h, w, c = img.shape
 
-        img_burst = np.zeros((h * len(unique_img_paths), w, c), dtype=img.dtype)
-        for img_i, img_path in enumerate(unique_img_paths):
-            if img_i == 0:
-                img_burst[:h, :, :] = img
+        # normalize to [0, 1]
+        LQ = img.astype(np.float32) / 255.0
+
+        # BGR to RGB, HWC to CHW, numpy to tensor
+        if LQ.shape[2] == 3:
+            LQ = LQ[:, :, [2, 1, 0]]  # BGR2RGB
+        LQ = torch.from_numpy(np.ascontiguousarray(np.transpose(LQ, (2, 0, 1)))).float()
+        LQ = LQ.unsqueeze(0)  # CHW -> NCHW
+
+        # ---------- Inference
+        noisy_state = sde.noise_state(LQ)
+        model.feed_data(noisy_state, LQ)
+        model.test(sde, save_states=True)
+
+        # ---------- Get output
+        visuals = model.get_current_visuals(need_GT=False)  # gpu -> cpu
+        output = visuals["Output"]
+        HQ = util.tensor2img(output.squeeze())  # uint8
+
+        # ---------- Save output
+        dst_save_path = os.path.abspath(dst_img_dir + "/" + img_name)
+        if not os.path.isfile(dst_save_path):
+            # cv2.imwrite(dst_save_path, HQ)
+            if img_name.endswith(".jpg"):
+                cv2.imencode(".jpg", HQ, [int(cv2.IMWRITE_JPEG_QUALITY), 100])[1].tofile(dst_save_path)
+            elif img_name.endswith(".png"):
+                cv2.imencode(".png", HQ, [cv2.IMWRITE_PNG_COMPRESSION, 0])[1].tofile(dst_save_path)
             else:
-                img = cv2.imread(img_path, cv2.IMREAD_COLOR)
-                img_burst[img_i * h:(img_i + 1) * h, :, :] = img
-        viz_path = viz_dir + "/" + unique_img_name + ext
-        cv2.imwrite(viz_path, img_burst)
-        print("--> {:s} saved".format(viz_path))
+                print("[Warning]: invalid file type: {:s}".format(img_name.split(".")[-1]))
+                continue
+            print("--> {:s} saved".format(dst_save_path))
 
 
 def text2img(txt, model, generator, dataset_dir, n_gen=10):
@@ -378,8 +253,7 @@ def text2img(txt, model, generator, dataset_dir, n_gen=10):
                 #                 + img_name + "_GEN_{:d}_ssim{:.3f}.png" \
                 #                     .format(i + 1, ssim_val)
                 save_img_path = os.path.abspath(save_img_path)
-                # cv2.imwrite(save_img_path, HQ)
-                cv2.imencode(".png", HQ, [cv2.IMWRITE_PNG_COMPRESSION, 0])[1].tofile(save_img_path)
+                cv2.imwrite(save_img_path, HQ)
                 # print("\n--> {:s} generated\n".format(save_img_path))
                 p_bar.update()
     elif plate_layers == "double":
@@ -454,6 +328,7 @@ def test_text2img(args, model, sde):
 
 
 if __name__ == "__main__":
-    test_text2img(args, model, sde)
-    viz_txt2img_set(src_dir="../../../results/img2img/img_translate",
-                    viz_dir="/mnt/diske/vis_plate_gen_16")
+    # test_text2img(args, model, sde)
+    run_degradation(model,
+                    src_img_dir="/mnt/diske/ROIs",
+                    dst_img_dir="/mnt/diske/lyw/Degradations")

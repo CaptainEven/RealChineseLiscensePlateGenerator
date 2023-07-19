@@ -1828,6 +1828,129 @@ def split_to_be_trained_set(file_list_path,
             p_bar.update()
 
 
+def random_sample_imgs(src_dir,
+                       ext=".jpg",
+                       ratio=0.001):
+    """
+    @param src_dir:
+    @param ext:
+    @param ratio:
+    @return:
+    """
+    src_dir = os.path.abspath(src_dir)
+    if not os.path.isdir(src_dir):
+        print("[Err]: invalid src dir: {:s}"
+              .format(src_dir))
+        exit(-1)
+
+    f_paths = []
+    find_files(src_dir, f_paths, ext)
+    print("[Info]: find total {:d} files of {:s}"
+          .format(len(f_paths), ext))
+
+    ret_f_paths = []
+    for f_path in f_paths:
+        if np.random.random() > ratio:
+            continue
+        # img = cv2.imread(f_path, cv2.IMREAD_COLOR)
+        # h, w, c = img.shape
+        ret_f_paths.append(f_path)
+    return ret_f_paths
+
+
+def random_crop_imgs(img_path_list,
+                     dst_dir_path,
+                     crop_size=(512, 512)):
+    """
+    @param img_path_list:
+    @param dst_dir_path:
+    @param crop_size:
+    @return:
+    """
+    if not isinstance(img_path_list, list):
+        print("[Err]: input is not a list!")
+        exit(-1)
+
+    def random_crop(img, crop_size=(128, 128)):
+        """
+        @param img:
+        @param crop_size:
+        @return:
+        """
+        h, w = img.shape[:2]
+        new_w, new_h = crop_size
+
+        if h <= 10 or w <= 10 \
+                or h - new_h <= 0 \
+                or w - new_w <= 0:
+            return None
+
+        y = np.random.randint(0, h - new_h)
+        x = np.random.randint(0, w - new_w)
+        img = img[y:y + new_h, x:x + new_w, :]
+        return img
+
+    dst_dir_path = os.path.abspath(dst_dir_path)
+    if not os.path.isdir(dst_dir_path):
+        try:
+            os.makedirs(dst_dir_path)
+        except Exception as e:
+            print(e)
+        else:
+            print("[Info]: {:s} made".format(dst_dir_path))
+
+    cnt = 0
+    with tqdm(total=len(img_path_list)) as p_bar:
+        for img_path in img_path_list:
+            if not os.path.isfile(img_path):
+                print("[Warning]: invalid img path: {:s}"
+                      .format(img_path))
+                p_bar.update()
+                continue
+
+            img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+            h, w, c = img.shape
+            roi = random_crop(img, crop_size)
+            if roi is None:
+                print("\n[Warning]: invalid img shape: {:d}×{:d}\n".format(w, h))
+                p_bar.update()
+                continue
+            save_path = dst_dir_path + "/roi_{:04d}.jpg".format(cnt)
+            cv2.imencode(".jpg", roi, [int(cv2.IMWRITE_JPEG_QUALITY), 100])[1].tofile(save_path)
+            cnt += 1
+            p_bar.update()
+
+
+def run_random_sample_and_crop_imgs(src_img_dir,
+                                    dst_img_dir,
+                                    ext=".jpg",
+                                    ratio=0.001):
+    """
+    @param src_img_dir:
+    @param dst_img_dir:
+    @param ext:
+    @param ratio:
+    @return:
+    """
+    src_img_dir = os.path.abspath(src_img_dir)
+    if not os.path.isdir(src_img_dir):
+        print("[Err]: invalid img root dir: {:s}"
+              .format(src_img_dir))
+        exit(-1)
+
+    dst_img_dir = os.path.abspath(dst_img_dir)
+    if os.path.isdir(dst_img_dir):
+        shutil.rmtree(dst_img_dir)
+    try:
+        os.makedirs(dst_img_dir)
+    except Exception as e:
+        print(e)
+        exit(-1)
+
+    img_paths = random_sample_imgs(src_img_dir, ext, ratio)
+    random_crop_imgs(img_paths, dst_img_dir, crop_size=(512, 512))
+
+
 if __name__ == "__main__":
     # gen_HQs(img_path_list_f="../files/train_crnn_file_list221230.txt",
     #         HQ_dir="../../../HQ")
@@ -1902,13 +2025,21 @@ if __name__ == "__main__":
     # split_and_statistics(root_dir="../../../img2img/")
 
     # ----------
-    # split_to_be_trained_set(file_list_path="/mnt/diske/zhoukai/normal_plates.list",
-    #                         dst_dir="/mnt/diske/lyw/ToBeCheckedPlates")
+    # cp_files(src_dir="/mnt/diske/lyw/ToBeCheckedPlates/00010",
+    #          dst_dir="../../../img2img/HQ")
+    # gen_lost_LQs(root_dir="../../../img2img")
+    # filter_HQLQ_pairs(root_dir="../../../img2img/")
+    # split_and_statistics(root_dir="../../../img2img/")
 
-    cp_files(src_dir="/mnt/diske/lyw/ToBeCheckedPlates/00010",
-             dst_dir="../../../img2img/HQ")
-    gen_lost_LQs(root_dir="../../../img2img")
-    filter_HQLQ_pairs(root_dir="../../../img2img/")
-    split_and_statistics(root_dir="../../../img2img/")
+    # ----------
+    # run_random_sample_and_crop_imgs(src_img_dir="/mnt/diske/Picture_data",
+    #                                 dst_img_dir="/mnt/diske/ROIs",
+    #                                 ext=".jpg",
+    #                                 ratio=0.0001)
+
+    run_random_sample_and_crop_imgs(src_img_dir="/mnt/ssd/lyw/img2img/DGN/HR",
+                                    dst_img_dir="/mnt/diske/ROIs",
+                                    ext=".png",
+                                    ratio=0.01)
 
     print("--> Done.")

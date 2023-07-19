@@ -281,3 +281,4 @@ def mse(img1, img2):
     err = np.sum((img1.astype("float") - img2.astype("float")) ** 2)
     err /= float(img1.shape[0] * img1.shape[1])
     return err
+

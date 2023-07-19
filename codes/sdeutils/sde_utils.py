@@ -395,7 +395,7 @@ class IRSDE(SDE):
         """
         T = self.T if T < 0 else T
         x = xt.clone()
-        for t in reversed(range(1, T + 1)):
+        for t in reversed(range(1, T + 1)):  # iterations here...
             score = self.score_fn(x, t)
             x = self.reverse_sde_step(x, score, t)
 
