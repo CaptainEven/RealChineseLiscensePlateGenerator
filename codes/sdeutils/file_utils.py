@@ -1933,11 +1933,13 @@ def random_crop_imgs(img_path_list,
 def run_random_sample_and_crop_imgs(src_img_dir,
                                     dst_img_dir,
                                     ext=".jpg",
+                                    crop_size=(448, 448),
                                     ratio=0.001):
     """
     @param src_img_dir:
     @param dst_img_dir:
     @param ext:
+    @param crop_size: [w, h]
     @param ratio:
     @return:
     """
@@ -1956,8 +1958,9 @@ def run_random_sample_and_crop_imgs(src_img_dir,
         print(e)
         exit(-1)
 
+    print("[Info]: crop size: {:d}×{:d}".format(crop_size[0], crop_size[1]))
     img_paths = random_sample_imgs(src_img_dir, ext, ratio)
-    random_crop_imgs(img_paths, dst_img_dir, crop_size=(512, 512))
+    random_crop_imgs(img_paths, dst_img_dir, crop_size)
 
 
 if __name__ == "__main__":
@@ -2046,9 +2049,10 @@ if __name__ == "__main__":
     #                                 ext=".jpg",
     #                                 ratio=0.0001)
 
-    run_random_sample_and_crop_imgs(src_img_dir="/mnt/ssd/lyw/img2img/DGN/HR",
+    run_random_sample_and_crop_imgs(src_img_dir="/mnt/diske/Picture_data",
                                     dst_img_dir="/mnt/diske/ROIs",
-                                    ext=".png",
-                                    ratio=0.01)
+                                    ext=".jpg",
+                                    crop_size=(768, 448),
+                                    ratio=0.0001)
 
     print("--> Done.")
