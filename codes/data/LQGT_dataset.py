@@ -84,13 +84,9 @@ class LQGTDataset(data.Dataset):
 
         # ---------- get LR image
         LR_path = self.LR_paths[idx]
-        if self.opt["data_type"] == "lmdb":
-            resolution = [int(s) for s in self.LR_sizes[idx].split("_")]
-        else:
-            resolution = None
 
         # return: Numpy float32, HWC, BGR, [0, 1]
-        img_LR = util.read_img(self.LR_env, LR_path, resolution)
+        img_LR = util.read_img(self.LR_env, LR_path, None)
 
         # ----- cropping according to GT cropping
         img_LR = img_LR[y_min: y_max, x_min: x_max, :]
