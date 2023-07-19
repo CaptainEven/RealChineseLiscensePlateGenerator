@@ -10,6 +10,8 @@ import torch
 # Files & IO
 
 IMG_EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP', 'tif']
+
+
 # IMG_EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG']
 
 
@@ -30,7 +32,7 @@ def _get_paths_from_images(path):
     path = os.path.abspath(path)
     print("[Info]: path: {:s}".format(path))
 
-    assert os.path.isdir(path), '{:s} is not a valid directory'\
+    assert os.path.isdir(path), '{:s} is not a valid directory' \
         .format(path)
     images = []
     for dir_path, _, f_names in sorted(os.walk(path)):
@@ -73,8 +75,14 @@ def get_image_paths(data_type, data_root):
 
 
 def _read_img_lmdb(env, key, size):
-    '''read image from lmdb with key (w/ and w/o fixed size)
-    size: (C, H, W) tuple'''
+    """
+    read image from lmdb with key (w/ and w/o fixed size)
+    size: (C, H, W) tuple
+    @param env:
+    @param key:
+    @param size:
+    @return:
+    """
     with env.begin(write=False) as txn:
         buf = txn.get(key.encode('ascii'))
     img_flat = np.frombuffer(buf, dtype=np.uint8)
@@ -92,12 +100,12 @@ def read_img(env, path, size=None):
     @param size:
     @return:
     """
-    if env is None:  # img
+    if env is None:  # img: BGR
         img = cv2.imread(path, cv2.IMREAD_COLOR)  # IMREAD_UNCHANGED
     else:
         img = _read_img_lmdb(env, path, size)
 
-    img = img.astype(np.float32) / 255.0
+    img = img.astype(np.float32) / 255.0  # [0.0, 1.0]
     if img.ndim == 2:
         img = np.expand_dims(img, axis=2)
 
@@ -278,10 +286,13 @@ def random_crop(img, crop_size=(128, 128)):
     """
     h, w = img.shape[:2]
     new_w, new_h = crop_size
-    y = np.random.randint(0, h - new_h)
-    x = np.random.randint(0, w - new_w)
-    img = img[y:y + new_h, x:x + new_w, :]
-    return img
+    y_min = np.random.randint(0, h - new_h)
+    x_min = np.random.randint(0, w - new_w)
+    y_max = y_min + new_h
+    x_max = x_min + new_w
+    img = img[y_min: y_max, x_min: x_max, :]
+    return img, (y_min, y_max), (x_min, x_max)
+
 
 # Functions
 # matlab 'imresize' function, now only support 'bicubic'
@@ -293,8 +304,8 @@ def cubic(x):
 
     weight = (1.5 * absx3 - 2.5 * absx2 + 1) * (
         (absx <= 1).type_as(absx)) + (-0.5 * absx3 + 2.5 * absx2 - 4 * absx + 2) * ((
-                                                                                            (absx > 1) * (
-                                                                                                absx <= 2)).type_as(
+            (absx > 1) * (
+            absx <= 2)).type_as(
         absx))
     return weight
 

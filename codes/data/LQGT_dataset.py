@@ -80,11 +80,7 @@ class LQGTDataset(data.Dataset):
         img_GT = util.read_img(self.GT_env, GT_path, None)
 
         # ----- random cropping
-        img_GT = util.random_crop(img_GT, GT_size)
-
-        # mod-crop in the validation / test phase
-        if self.opt["phase"] != "train":
-            img_GT = util.modcrop(img_GT, scale)
+        img_GT, (y_min, y_max), (x_min, x_max) = util.random_crop(img_GT, GT_size)
 
         # ---------- get LR image
         LR_path = self.LR_paths[idx]
@@ -96,8 +92,8 @@ class LQGTDataset(data.Dataset):
         # return: Numpy float32, HWC, BGR, [0, 1]
         img_LR = util.read_img(self.LR_env, LR_path, resolution)
 
-        # ----- random cropping
-        img_LR = util.random_crop(img_LR, LR_size)
+        # ----- cropping according to GT cropping
+        img_LR = img_LR[y_min: y_max, x_min: x_max, :]
 
         H, W, C = img_LR.shape
 
