@@ -332,4 +332,4 @@ if __name__ == "__main__":
     run_degradation(model,
                     src_img_dir="/mnt/diske/ROIs",
                     dst_img_dir="/mnt/diske/lyw/Degradations",
-                    ext=".png")
+                    ext=".jpg")

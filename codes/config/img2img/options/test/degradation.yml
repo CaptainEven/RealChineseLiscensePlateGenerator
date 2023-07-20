@@ -36,4 +36,4 @@ network_G:
 
 #### path
 path:
-  pretrain_model_G: ../../../weights/5000_dgn_G.pth
+  pretrain_model_G: ../../../weights/30000_dgn_G.pth
