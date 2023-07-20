@@ -1996,6 +1996,7 @@ def run_random_sample_imgs(src_root,
     print("[Info]: find total {:d} files of [{:s}]"
           .format(len(f_paths), ext))
 
+    cnt = 0
     for f_path in f_paths:
         if np.random.random() > ratio:
             continue
@@ -2005,6 +2006,70 @@ def run_random_sample_imgs(src_root,
         if not os.path.isfile(dst_f_path):
             shutil.copy(f_path, dst_dir)
             print("--> {:s} [cp to] {:s}".format(f_name, dst_dir))
+        cnt += 1
+    print("[Info]: total {:d} samples generated".format(cnt))
+
+
+def filter_imgs(img_dir):
+    """
+    @param img_dir:
+    @return:
+    """
+
+    def save_img_without_compression(save_path, img):
+        """
+        @param save_path:
+        @param img:
+        @return:
+        """
+        f_name = os.path.split(save_path)[-1]
+        f_ext = f_name.split(".")[-1]
+        if f_ext == "png":
+            cv2.imencode(".png", img, [cv2.IMWRITE_PNG_COMPRESSION, 0])[1].tofile(save_path)
+        elif f_ext == "jpg":
+            cv2.imencode(".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), 100])[1].tofile(save_path)
+        else:
+            print("[Warning]: invalid file type: {:s}".format(f_ext))
+            cv2.imwrite(save_path, img)
+
+    img_dir = os.path.abspath(img_dir)
+    if not os.path.isdir(img_dir):
+        print("[Err]: invalid img dir: {:s}"
+              .format(img_dir))
+        exit(-1)
+
+    cnt = 0
+    f_names = [x for x in os.listdir(img_dir)]
+    with tqdm(total=len(f_names)) as p_bar:
+        for f_name in f_names:
+            f_path = os.path.abspath(img_dir + "/" + f_name)
+            if not os.path.isfile(f_path):
+                print("[Warning]: invalid file path: {:s}"
+                      .format(f_path))
+                p_bar.update()
+                continue
+
+            img = cv2.imread(f_path, cv2.IMREAD_COLOR)
+            if img is None:
+                print("[Warning]: read img failed".format(f_name))
+                p_bar.update()
+                continue
+
+            h, w, c = img.shape
+            if w < 1000:
+                os.remove(f_path)
+                print("--> {:s} removed".format(f_path))
+                p_bar.update()
+                continue
+            if h == 1120 or h == 1128 or h == 1480:
+                img = img[40:, :, :]
+                save_img_without_compression(f_path, img)
+                print("--> {:s} cropped".format(f_path))
+
+            cnt += 1
+            p_bar.update()
+
+    print("[Info]: total {:d} files remained".format(cnt))
 
 
 if __name__ == "__main__":
@@ -2093,15 +2158,17 @@ if __name__ == "__main__":
     #                                 ext=".jpg",
     #                                 ratio=0.0001)
 
-    run_random_sample_and_crop_imgs(src_img_dir="/mnt/diske/Picture_data",
-                                    dst_img_dir="/mnt/diske/ROIs",
-                                    ext=".jpg",
-                                    crop_size=(1024, 1024),
-                                    ratio=0.0001)
+    # run_random_sample_and_crop_imgs(src_img_dir="/mnt/diske/Picture_data",
+    #                                 dst_img_dir="/mnt/diske/ROIs",
+    #                                 ext=".jpg",
+    #                                 crop_size=(1024, 1024),
+    #                                 ratio=0.0001)
 
     # run_random_sample_imgs(src_root="/mnt/diske/Picture_data",
     #                        dst_dir="/mnt/diske/RandomSamples",
     #                        ext=".jpg",
-    #                        ratio=0.00001)
+    #                        ratio=0.001)
+
+    filter_imgs(img_dir="/mnt/diske/RandomSamples")
 
     print("--> Done.")

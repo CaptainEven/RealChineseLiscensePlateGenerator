@@ -118,6 +118,85 @@ def find_files(root, f_list, ext):
             find_files(f_path, f_list, ext)
 
 
+def generate_LR_HR_pairs(model,
+                         src_dir,
+                         dst_dir,
+                         ext=".jpg",
+                         down_scale=2):
+    """
+    @param model:
+    @param src_dir:
+    @param dst_dir:
+    @param ext:
+    @param down_scale:
+    @return:
+    """
+    src_dir = os.path.abspath(src_dir)
+    if not os.path.isdir(src_dir):
+        print("[Err]: invalid src dir: {:s}, exit now!"
+              .format(src_dir))
+        exit(-1)
+
+    dst_dir = os.path.abspath(dst_dir)
+    # if os.path.isdir(dst_dir):
+    #     shutil.rmtree(dst_dir)
+    # try:
+    #     os.makedirs(dst_dir)
+    # except Exception as e:
+    #     print(e)
+    #     exit(-1)
+
+    dst_HR_dir = os.path.abspath(dst_dir + "/HR")
+    if not os.path.isdir(dst_HR_dir):
+        os.makedirs(dst_HR_dir)
+    dst_LR_dir = os.path.abspath(dst_dir + "/LR")
+    if not os.path.isdir(dst_LR_dir):
+        os.makedirs(dst_LR_dir)
+    dst_LR_sub_dir = os.path.abspath(dst_LR_dir + "/X{:d}"
+                                     .format(int(down_scale)))
+    if not os.path.isdir(dst_LR_sub_dir):
+        os.makedirs(dst_LR_sub_dir)
+
+    f_paths = []
+    find_files(src_dir, f_paths, ext)
+    print("[Info]: find total {:d} files of [{:s}]"
+          .format(len(f_paths), ext))
+    for f_path in f_paths:
+        f_name = os.path.split(f_path)[-1]
+
+        # ----- generate HR image
+        dst_hr_path = os.path.abspath(dst_HR_dir + "/" + f_name)
+        if not os.path.isfile(dst_hr_path):
+            shutil.copy(f_path, dst_HR_dir)
+            print("--> {:s} [cp to] {:s}".
+                  format(f_name, dst_HR_dir))
+
+        # ----- generate LR image
+        hr = cv2.imread(f_path, cv2.IMREAD_COLOR)
+        h, w, c = hr.shape
+        lr = cv2.resize(hr, (w // down_scale, h // down_scale), cv2.INTER_CUBIC)
+        dst_lr_path = os.path.abspath(dst_LR_sub_dir + "/" + f_name)
+        if not os.path.isfile(dst_lr_path):
+            LQ = util.img2tensor(lr)
+            LQ = LQ.unsqueeze(0)  # CHW -> NCHW
+
+            # ---------- Inference
+            noisy_state = sde.noise_state(LQ)
+            model.feed_data(noisy_state, LQ)
+            model.test(sde, save_states=True)
+
+            # ---------- Get output
+            visuals = model.get_current_visuals(need_GT=False)  # gpu -> cpu
+            output = visuals["Output"]
+            HQ = util.tensor2img(output.squeeze())  # uint8
+
+            # ----- Save output
+            util.save_img_without_compression(dst_lr_path, HQ)
+            print("--> {:s} generated @ {:s}"
+                  .format(f_name, dst_LR_sub_dir))
+        print("\n")
+
+
 def run_degradation(model,
                     src_img_dir,
                     dst_img_dir,
@@ -191,89 +270,14 @@ def run_degradation(model,
             print("--> {:s} saved".format(dst_save_path))
 
 
-def text2img(txt, model, generator, dataset_dir, n_gen=10):
-    """
-    @param txt:
-    @param model:
-    @param generator:
-    @param dataset_dir:
-    @param n_gen:
-    @return:
-    """
-    # ---------- Generate standard license plate img
-    fields = txt.split("_")
-    assert len(fields) >= 3
-    plate_number = fields[0]
-    plate_color = fields[1]
-    plate_layers = fields[2]
-    is_double = plate_layers == "double"
-    img_name = txt
-    LQ_np_bgr = generator.generate_plate_special(plate_number=plate_number,
-                                                 bg_color=plate_color,
-                                                 is_double=is_double)
-    model_img_path = "/mnt/diske/{:s}.png".format(plate_number)
-    cv2.imwrite(model_img_path, LQ_np_bgr)
-    # print("[Info]: model image(LQ) {:s} saved".format(model_img_path))
-
-    # ---------- Generate HQ img
-    if plate_layers == "single":  # single layer license plate image
-        h, w, c = LQ_np_bgr.shape
-        if w != 192 or h != 64:
-            LQ_np_bgr = cv2.resize(LQ_np_bgr, (192, 64), cv2.INTER_LINEAR)  # BGR
-
-        # normalize to [0, 1]
-        LQ = LQ_np_bgr.astype(np.float32) / 255.0
-
-        # ---------- BGR to RGB, HWC to CHW, numpy to tensor
-        if LQ.shape[2] == 3:
-            LQ = LQ[:, :, [2, 1, 0]]  # BGR2RGB
-        LQ = torch.from_numpy(np.ascontiguousarray(np.transpose(LQ, (2, 0, 1)))).float()
-        LQ = LQ.unsqueeze(0)  # CHW -> NCHW
-        with tqdm(total=n_gen) as p_bar:
-            for i in range(n_gen):
-                # ---------- Inference
-                noisy_state = sde.noise_state(LQ)
-                model.feed_data(noisy_state, LQ)
-                model.test(sde, save_states=True)
-
-                # ---------- Get output
-                visuals = model.get_current_visuals(need_GT=False)  # gpu -> cpu
-                output = visuals["Output"]
-                HQ = util.tensor2img(output.squeeze())  # uint8
-
-                # # ---------- Calculate LQ/HQ similarity
-                # ssim_val = calculate_ssim(LQ_np_bgr, HQ)
-                # psnr_val = calculate_psnr(LQ_np_bgr, HQ)
-                # rmse_val = rmse(LQ_np_bgr, HQ)
-
-                # ---------- Save output
-                save_img_path = dataset_dir + "/" \
-                                + img_name + "_GEN_{:d}.png" \
-                                    .format(i + 1)
-                # save_img_path = dataset_dir + "/" \
-                #                 + img_name + "_GEN_{:d}_ssim{:.3f}.png" \
-                #                     .format(i + 1, ssim_val)
-                save_img_path = os.path.abspath(save_img_path)
-                save_img_name = os.path.split(save_img_path)[-1]
-                ext = save_img_name.split(".")[-1]
-                if save_img_path.endswith(".png"):
-                    cv2.imencode(".png", HQ, [cv2.IMWRITE_PNG_COMPRESSION, 0])[1].tofile(save_img_path)
-                elif save_img_path.endswith(".jpg"):
-                    cv2.imencode(".jpg", HQ, [int(cv2.IMWRITE_JPEG_QUALITY), 100])[1].tofile(save_img_path)
-                else:
-                    print("[Warning]: invalid img type: {:s}!".format(ext))
-                    p_bar.update()
-                    continue
-                # print("\n--> {:s} generated\n".format(save_img_path))
-                p_bar.update()
-    elif plate_layers == "double":
-        print("[Warning]: double not surported now!")
-        return
-
-
 if __name__ == "__main__":
     # test_text2img(args, model, sde)
-    run_degradation(model,
-                    src_img_dir="/mnt/diske/ROIs",
-                    dst_img_dir="/mnt/diske/lyw/Degradations",
-                    ext=".jpg")
+    # run_degradation(model,
+    #                 src_img_dir="/mnt/diske/ROIs",
+    #                 dst_img_dir="/mnt/diske/lyw/Degradations",
+    #                 ext=".jpg")
+
+    generate_LR_HR_pairs(model,
+                         src_dir="/mnt/diske/RandomSamples",
+                         dst_dir="/mnt/ssd/lyw/SISR",
+                         ext=".jpg")

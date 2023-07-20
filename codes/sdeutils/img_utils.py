@@ -123,6 +123,7 @@ def to_tensor(pic):
     else:
         nchannel = len(pic.mode)
     img = img.view(pic.size[1], pic.size[0], nchannel)
+
     # put it from HWC to CHW format
     # yikes, this transpose takes 80% of the loading time/CPU
     img = img.transpose(0, 1).transpose(0, 2).contiguous()
@@ -184,6 +185,23 @@ def img2tensor(img):
     img = img[:, :, [2, 1, 0]]
     img = torch.from_numpy(np.ascontiguousarray(np.transpose(img, (2, 0, 1)))).float()
     return img
+
+
+def save_img_without_compression(save_path, img):
+    """
+    @param save_path:
+    @param img:
+    @return:
+    """
+    f_name = os.path.split(save_path)[-1]
+    f_ext = f_name.split(".")[-1]
+    if f_ext == "png":
+        cv2.imencode(".png", img, [cv2.IMWRITE_PNG_COMPRESSION, 0])[1].tofile(save_path)
+    elif f_ext == "jpg":
+        cv2.imencode(".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), 100])[1].tofile(save_path)
+    else:
+        print("[Warning]: invalid file type: {:s}".format(f_ext))
+        cv2.imwrite(save_path, img)
 
 
 def calculate_psnr(img1, img2):
@@ -281,4 +299,3 @@ def mse(img1, img2):
     err = np.sum((img1.astype("float") - img2.astype("float")) ** 2)
     err /= float(img1.shape[0] * img1.shape[1])
     return err
-
