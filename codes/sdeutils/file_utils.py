@@ -1963,6 +1963,50 @@ def run_random_sample_and_crop_imgs(src_img_dir,
     random_crop_imgs(img_paths, dst_img_dir, crop_size)
 
 
+def run_random_sample_imgs(src_root,
+                           dst_dir,
+                           ext=".jpg",
+                           ratio=0.0001):
+    """
+    @param src_root:
+    @param dst_dir:
+    @param ext:
+    @return:
+    """
+    src_root = os.path.abspath(src_root)
+    if not os.path.isdir(src_root):
+        print("[Err]: invalid src root: {:s}"
+              .format(src_root))
+        exit(-1)
+
+    dst_dir = os.path.abspath(dst_dir)
+    if os.path.isdir(dst_dir):
+        shutil.rmtree(dst_dir)
+    try:
+        os.makedirs(dst_dir)
+    except Exception as e:
+        print(e)
+        exit(-1)
+
+    # f_paths = random_sample_imgs(src_root, ext, ratio)
+
+    # -----
+    f_paths = []
+    find_files(src_root, f_paths, ext)
+    print("[Info]: find total {:d} files of [{:s}]"
+          .format(len(f_paths), ext))
+
+    for f_path in f_paths:
+        if np.random.random() > ratio:
+            continue
+
+        f_name = os.path.split(f_path)[-1]
+        dst_f_path = os.path.abspath(dst_dir + "/" + f_name)
+        if not os.path.isfile(dst_f_path):
+            shutil.copy(f_path, dst_dir)
+            print("--> {:s} [cp to] {:s}".format(f_name, dst_dir))
+
+
 if __name__ == "__main__":
     # gen_HQs(img_path_list_f="../files/train_crnn_file_list221230.txt",
     #         HQ_dir="../../../HQ")
@@ -2052,7 +2096,12 @@ if __name__ == "__main__":
     run_random_sample_and_crop_imgs(src_img_dir="/mnt/diske/Picture_data",
                                     dst_img_dir="/mnt/diske/ROIs",
                                     ext=".jpg",
-                                    crop_size=(768, 448),
+                                    crop_size=(1024, 1024),
                                     ratio=0.0001)
+
+    # run_random_sample_imgs(src_root="/mnt/diske/Picture_data",
+    #                        dst_dir="/mnt/diske/RandomSamples",
+    #                        ext=".jpg",
+    #                        ratio=0.00001)
 
     print("--> Done.")

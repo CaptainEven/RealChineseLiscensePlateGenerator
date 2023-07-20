@@ -154,8 +154,9 @@ def run_degradation(model,
         img = cv2.imread(img_path, cv2.IMREAD_COLOR)
         if img is None:
             continue
-        print("--> degradate {:s}...".format(img_name))
         h, w, c = img.shape
+        print("--> degradating {:s} of input size {:d}×{:d}..."
+              .format(img_name, w, h))
 
         # normalize to [0, 1]
         LQ = img.astype(np.float32) / 255.0
@@ -253,78 +254,21 @@ def text2img(txt, model, generator, dataset_dir, n_gen=10):
                 #                 + img_name + "_GEN_{:d}_ssim{:.3f}.png" \
                 #                     .format(i + 1, ssim_val)
                 save_img_path = os.path.abspath(save_img_path)
-                cv2.imwrite(save_img_path, HQ)
+                save_img_name = os.path.split(save_img_path)[-1]
+                ext = save_img_name.split(".")[-1]
+                if save_img_path.endswith(".png"):
+                    cv2.imencode(".png", HQ, [cv2.IMWRITE_PNG_COMPRESSION, 0])[1].tofile(save_img_path)
+                elif save_img_path.endswith(".jpg"):
+                    cv2.imencode(".jpg", HQ, [int(cv2.IMWRITE_JPEG_QUALITY), 100])[1].tofile(save_img_path)
+                else:
+                    print("[Warning]: invalid img type: {:s}!".format(ext))
+                    p_bar.update()
+                    continue
                 # print("\n--> {:s} generated\n".format(save_img_path))
                 p_bar.update()
     elif plate_layers == "double":
         print("[Warning]: double not surported now!")
         return
-
-
-def test_text2img(args, model, sde):
-    """
-    @param args:
-    @param model:
-    @param sde:
-    @return:
-    """
-    opt = args.opt
-
-    # ---------- Set dataset dir path
-    test_set_name = test_loader.dataset.opt["name"]
-    dataset_dir = os.path.join(opt["path"]["results_root"], test_set_name)
-    dataset_dir = os.path.abspath(dataset_dir)
-    if os.path.isdir(dataset_dir):
-        shutil.rmtree(dataset_dir)
-    util.mkdir(dataset_dir)
-
-    # ---------- Define a generator
-    generator = MultiPlateGenerator('../../LicensePlateGenerator/plate_model',
-                                    '../../LicensePlateGenerator/font_model')
-
-    if args.type == "single":
-        print("[Info]: single mode")
-        text2img(args.text, model, generator, dataset_dir, n_gen=10)
-    elif args.type == "list":
-        print("[Info]: list mode")
-        print("[Info]: generation from file list...")
-        list_file_path = os.path.abspath(args.list_file)
-        if not os.path.isfile(list_file_path):
-            print("[Err]: invalid list file: {:s}"
-                  .format(list_file_path))
-            exit(-1)
-
-        n_files = 0
-        with open(list_file_path, "r", encoding="utf-8") as f:
-            n_files = len(f.readlines())
-        print("\n[Info]: total {:d} files to be generated".format(n_files))
-        with open(list_file_path, "r", encoding="utf-8") as f:
-            file_i = 0
-            for line in f.readlines():
-                file_i += 1
-                text = line.strip()
-                print("\n--> generating {:s}, ({:3d}/{:3d})...\n"
-                      .format(text, file_i, n_files))
-                text2img(text, model, generator, dataset_dir, n_gen=10)
-    elif args.type == "instant":
-        print("[Info]: instant mode")
-        color = ["blue", "yellow", "white", "black", "green"]
-        # layer = ["single", "double"]
-        layer = ["single"]
-        yellow_special = ["xue", "gua", "normal"]
-        white_special = ["wujing", "jun", "jing", "yingji"]
-        green_special = ["bus", "normal"]
-        black_special = ["gang", "ao", "dashi", "lingshi"]
-        for i in range(args.num):
-            text = generate_random_plate_text(color,
-                                              layer,
-                                              yellow_special,
-                                              white_special,
-                                              green_special,
-                                              black_special)
-            print("--> generating {:s}, {:3d}/{:3d}..."
-                  .format(text, i + 1, args.num))
-            text2img(text, model, generator, dataset_dir, n_gen=3)
 
 
 if __name__ == "__main__":
