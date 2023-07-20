@@ -2016,7 +2016,7 @@ def filter_imgs(img_dir):
     @return:
     """
 
-    def save_img_without_compression(save_path, img):
+    def save_img_uncompressed(save_path, img):
         """
         @param save_path:
         @param img:
@@ -2063,7 +2063,7 @@ def filter_imgs(img_dir):
                 continue
             if h == 1120 or h == 1128 or h == 1480:
                 img = img[40:, :, :]
-                save_img_without_compression(f_path, img)
+                save_img_uncompressed(f_path, img)
                 print("--> {:s} cropped".format(f_path))
 
             cnt += 1
