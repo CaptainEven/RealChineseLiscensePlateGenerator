@@ -2044,27 +2044,31 @@ def filter_imgs(img_dir):
         for f_name in f_names:
             f_path = os.path.abspath(img_dir + "/" + f_name)
             if not os.path.isfile(f_path):
-                print("[Warning]: invalid file path: {:s}"
+                print("\n[Warning]: invalid file path: {:s}\n"
                       .format(f_path))
                 p_bar.update()
                 continue
 
             img = cv2.imread(f_path, cv2.IMREAD_COLOR)
             if img is None:
-                print("[Warning]: read img failed".format(f_name))
+                print("\n[Warning]: read img failed\n".format(f_name))
                 p_bar.update()
                 continue
 
             h, w, c = img.shape
             if w < 1000:
                 os.remove(f_path)
-                print("--> {:s} removed".format(f_path))
+                print("\n--> {:s} removed\n".format(f_path))
                 p_bar.update()
                 continue
             if h == 1120 or h == 1128 or h == 1480:
                 img = img[40:, :, :]
                 save_img_uncompressed(f_path, img)
-                print("--> {:s} cropped".format(f_path))
+                print("\n--> {:s} cropped\n".format(f_path))
+            elif h == 1088:
+                img = img[8:, :, :]
+                save_img_uncompressed(f_path, img)
+                print("\n--> {:s} cropped\n".format(f_path))
 
             cnt += 1
             p_bar.update()
