@@ -45,7 +45,7 @@ parser.add_argument("-opt",
                     help="Path to options YMAL file.")
 parser.add_argument("--text",
                     type=str,
-                    default="使014578_black_single",
+                    default="XA12345_white_single",
                     help="")
 parser.add_argument("--num",
                     type=int,
@@ -57,7 +57,7 @@ parser.add_argument("--list_file",
                     help="")
 parser.add_argument("--type",
                     type=str,
-                    default="instant",
+                    default="single",
                     help="single | list | instant")
 
 args = parser.parse_args()
@@ -378,7 +378,18 @@ def text2img(txt, model, generator, dataset_dir, n_gen=10):
                 #                 + img_name + "_GEN_{:d}_ssim{:.3f}.png" \
                 #                     .format(i + 1, ssim_val)
                 save_img_path = os.path.abspath(save_img_path)
-                cv2.imwrite(save_img_path, HQ)
+                save_img_name = os.path.split(save_img_path)[-1]
+                ext = save_img_name.split(".")[0]
+                # cv2.imwrite(save_img_path, HQ)
+                if save_img_path.endswith(".png"):
+                    cv2.imencode(".png", HQ, [cv2.IMWRITE_PNG_COMPRESSION, 0])[1].tofile(save_img_path)
+                elif save_img_path.endswith(".jpg"):
+                    cv2.imencode(".jpg", HQ, [int(cv2.IMWRITE_JPEG_QUALITY), 100])[1].tofile(save_img_path)
+                else:
+                    print("[Warning]: invalid img type: {:s}!".format(ext))
+                    p_bar.update()
+                    continue
+
                 # print("\n--> {:s} generated\n".format(save_img_path))
                 p_bar.update()
     elif plate_layers == "double":
