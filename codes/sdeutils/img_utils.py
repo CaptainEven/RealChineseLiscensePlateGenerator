@@ -187,7 +187,7 @@ def img2tensor(img):
     return img
 
 
-def save_img_without_compression(save_path, img):
+def save_img_uncompressed(save_path, img):
     """
     @param save_path:
     @param img:

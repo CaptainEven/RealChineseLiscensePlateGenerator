@@ -138,13 +138,13 @@ def generate_LR_HR_pairs(model,
         exit(-1)
 
     dst_dir = os.path.abspath(dst_dir)
-    # if os.path.isdir(dst_dir):
-    #     shutil.rmtree(dst_dir)
-    # try:
-    #     os.makedirs(dst_dir)
-    # except Exception as e:
-    #     print(e)
-    #     exit(-1)
+    if os.path.isdir(dst_dir):
+        shutil.rmtree(dst_dir)
+    try:
+        os.makedirs(dst_dir)
+    except Exception as e:
+        print(e)
+        exit(-1)
 
     dst_HR_dir = os.path.abspath(dst_dir + "/HR")
     if not os.path.isdir(dst_HR_dir):
@@ -191,7 +191,7 @@ def generate_LR_HR_pairs(model,
             HQ = util.tensor2img(output.squeeze())  # uint8
 
             # ----- Save output
-            util.save_img_without_compression(dst_lr_path, HQ)
+            util.save_img_uncompressed(dst_lr_path, HQ)
             print("--> {:s} generated @ {:s}"
                   .format(f_name, dst_LR_sub_dir))
         print("\n")
