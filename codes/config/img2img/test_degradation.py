@@ -192,7 +192,7 @@ def generate_LR_HR_pairs(model,
 
             # ----- Save output
             util.save_img_uncompressed(dst_lr_path, HQ)
-            print("--> {:s} generated @ {:s}"
+            print("--> {:s} [generated at] {:s}"
                   .format(f_name, dst_LR_sub_dir))
         print("\n")
 
