@@ -24,8 +24,8 @@ datasets:
   train:
     name: Train_Dataset
     mode: LQGT
-    dataroot_GT: ../../img2img/HQ  # GT
-    dataroot_LQ: ../../img2img/LQ
+    dataroot_GT: ../../img2img_data/HQ  # GT
+    dataroot_LQ: ../../img2img_data/LQ
 
     use_shuffle: true
     n_workers: 0  # per GPU
@@ -38,8 +38,8 @@ datasets:
   val:
     name: Val_Dataset
     mode: LQGT
-    dataroot_GT: ../../img2img/val/HQ  # GT
-    dataroot_LQ: ../../img2img/val/LQ
+    dataroot_GT: ../../img2img_data/val/HQ  # GT
+    dataroot_LQ: ../../img2img_data/val/LQ
 
 
 #### network structures
