@@ -2056,9 +2056,10 @@ def filter_imgs(img_dir):
                 continue
 
             h, w, c = img.shape
-            if w < 1000:
+            if w < 1000 or w > 2560:
                 os.remove(f_path)
-                print("\n--> {:s} removed\n".format(f_path))
+                print("\n--> {:s} removed, img size: {:d}×{:d}\n"
+                      .format(f_path, w, h))
                 p_bar.update()
                 continue
             if h == 1120 or h == 1128 or h == 1480:
