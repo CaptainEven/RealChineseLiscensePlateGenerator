@@ -191,9 +191,10 @@ def generate_LR_HR_pairs(model,
             HQ = util.tensor2img(output.squeeze())  # uint8
 
             # ----- Save output
-            util.save_img_uncompressed(dst_lr_path, HQ)  # save LR img
-            print("--> {:s} [generated at] {:s}"
-                  .format(f_name, dst_LR_sub_dir))
+            if not os.path.isfile(dst_lr_path):
+                util.save_img_uncompressed(dst_lr_path, HQ)  # save LR img
+                print("--> {:s} [generated at] {:s}"
+                      .format(f_name, dst_LR_sub_dir))
         print("\n")
 
 
