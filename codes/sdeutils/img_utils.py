@@ -180,6 +180,8 @@ def img2tensor(img):
     # BGR to RGB, HWC to CHW, numpy to tensor
     Input: img(H, W, C), [0,255], np.uint8 (default)
     Output: 3D(C,H,W), RGB order, float tensor
+    @param img:
+    @return:
     """
     img = img.astype(np.float32) / 255.0
     img = img[:, :, [2, 1, 0]]
