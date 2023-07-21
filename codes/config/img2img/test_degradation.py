@@ -167,7 +167,7 @@ def generate_LR_HR_pairs(model,
         # ----- generate HR image
         dst_hr_path = os.path.abspath(dst_HR_dir + "/" + f_name)
         if not os.path.isfile(dst_hr_path):
-            shutil.copy(f_path, dst_HR_dir)
+            shutil.copy(f_path, dst_HR_dir)  # copy HR img
             print("--> {:s} [cp to] {:s}".
                   format(f_name, dst_HR_dir))
 
@@ -191,7 +191,7 @@ def generate_LR_HR_pairs(model,
             HQ = util.tensor2img(output.squeeze())  # uint8
 
             # ----- Save output
-            util.save_img_uncompressed(dst_lr_path, HQ)
+            util.save_img_uncompressed(dst_lr_path, HQ)  # save LR img
             print("--> {:s} [generated at] {:s}"
                   .format(f_name, dst_LR_sub_dir))
         print("\n")
@@ -279,5 +279,5 @@ if __name__ == "__main__":
 
     generate_LR_HR_pairs(model,
                          src_dir="/mnt/diske/RandomSamples",
-                         dst_dir="/mnt/ssd/lyw/SISR",
+                         dst_dir="/mnt/ssd/lyw/SISR_data",
                          ext=".jpg")

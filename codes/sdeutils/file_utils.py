@@ -2077,6 +2077,46 @@ def filter_imgs(img_dir):
     print("[Info]: total {:d} files remained".format(cnt))
 
 
+def filter_img_pairs(lq_dir, hq_dir, ext=".jpg"):
+    """
+    @param lq_dir:
+    @param hq_dir:
+    @param ext:
+    @return:
+    """
+    lq_dir = os.path.abspath(lq_dir)
+    if not os.path.isdir(lq_dir):
+        print("[Err]: invalid lq dir: {:s}"
+              .format(lq_dir))
+        exit(-1)
+
+    hq_dir = os.path.abspath(hq_dir)
+    if not os.path.isdir(hq_dir):
+        print("[Err]: invalid hq dir: {:s}"
+              .format(hq_dir))
+        exit(-1)
+
+    lq_f_paths, hq_f_paths = [], []
+    find_files(lq_dir, lq_f_paths, ext)
+    find_files(hq_dir, hq_f_paths, ext)
+    lq_f_names = [os.path.split(x)[-1] for x in lq_f_paths]
+    hq_f_names = [os.path.split(x)[-1] for x in hq_f_paths]
+
+    if len(hq_f_names) > len(lq_f_names):  # rm redundant hq files
+        for hq_path, hq_name in zip(hq_f_paths, hq_f_names):
+            if hq_name in lq_f_names:
+                continue
+            os.remove(hq_path)
+            print("--> rm {:s}".format(hq_name))
+
+    elif len(lq_f_names) > len(hq_f_names):
+        for lq_path, lq_name in zip(lq_f_paths, lq_f_names):
+            if lq_name in hq_f_names:
+                continue
+            os.remove(lq_path)
+            print("--> rm {:s}".format(lq_path))
+
+
 if __name__ == "__main__":
     # gen_HQs(img_path_list_f="../files/train_crnn_file_list221230.txt",
     #         HQ_dir="../../../HQ")
@@ -2169,11 +2209,16 @@ if __name__ == "__main__":
     #                                 crop_size=(1024, 1024),
     #                                 ratio=0.0001)
 
-    # run_random_sample_imgs(src_root="/mnt/diske/Picture_data",
-    #                        dst_dir="/mnt/diske/RandomSamples",
-    #                        ext=".jpg",
-    #                        ratio=0.001)
-
+    # -----
+    run_random_sample_imgs(src_root="/mnt/diske/Picture_data",
+                           dst_dir="/mnt/diske/RandomSamples",
+                           ext=".jpg",
+                           ratio=0.005)
     filter_imgs(img_dir="/mnt/diske/RandomSamples")
+
+    # -----
+    # filter_img_pairs(lq_dir="/mnt/ssd/lyw/SISR_data/LR/X2",
+    #                  hq_dir="/mnt/ssd/lyw/SISR_data/HR",
+    #                  ext=".jpg")
 
     print("--> Done.")
