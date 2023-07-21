@@ -137,14 +137,14 @@ def generate_LR_HR_pairs(model,
               .format(src_dir))
         exit(-1)
 
-    dst_dir = os.path.abspath(dst_dir)
-    if os.path.isdir(dst_dir):
-        shutil.rmtree(dst_dir)
-    try:
-        os.makedirs(dst_dir)
-    except Exception as e:
-        print(e)
-        exit(-1)
+    # dst_dir = os.path.abspath(dst_dir)
+    # if os.path.isdir(dst_dir):
+    #     shutil.rmtree(dst_dir)
+    # try:
+    #     os.makedirs(dst_dir)
+    # except Exception as e:
+    #     print(e)
+    #     exit(-1)
 
     dst_HR_dir = os.path.abspath(dst_dir + "/HR")
     if not os.path.isdir(dst_HR_dir):

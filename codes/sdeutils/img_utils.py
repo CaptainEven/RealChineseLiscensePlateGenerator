@@ -198,7 +198,7 @@ def save_img_uncompressed(save_path, img):
     if f_ext == "png":
         cv2.imencode(".png", img, [cv2.IMWRITE_PNG_COMPRESSION, 0])[1].tofile(save_path)
     elif f_ext == "jpg":
-        cv2.imencode(".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), 100])[1].tofile(save_path)
+        cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 100])[1].tofile(save_path)
     else:
         print("[Warning]: invalid file type: {:s}".format(f_ext))
         cv2.imwrite(save_path, img)
