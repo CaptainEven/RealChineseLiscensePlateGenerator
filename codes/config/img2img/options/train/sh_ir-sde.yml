@@ -3,7 +3,7 @@ name: ir-sde
 use_tb_logger: true
 model: denoising
 distortion: multi_degerations
-gpu_ids: [7]
+gpu_ids: [1]
 
 sde:
   max_sigma: 10

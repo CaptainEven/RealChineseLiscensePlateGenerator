@@ -392,6 +392,7 @@ def text2img(txt, model, generator, dataset_dir, n_gen=10):
 
                 # print("\n--> {:s} generated\n".format(save_img_path))
                 p_bar.update()
+
     elif plate_layers == "double":
         print("[Warning]: double not surported now!")
         return
@@ -408,7 +409,7 @@ def test_text2img(args, model, sde):
 
     # ---------- Set dataset dir path
     test_set_name = test_loader.dataset.opt["name"]
-    dataset_dir = os.path.join(opt["path"]["results_root"], test_set_name)
+    dataset_dir = os.path.join(opt["path"]["res_dir"], test_set_name)
     dataset_dir = os.path.abspath(dataset_dir)
     if os.path.isdir(dataset_dir):
         shutil.rmtree(dataset_dir)

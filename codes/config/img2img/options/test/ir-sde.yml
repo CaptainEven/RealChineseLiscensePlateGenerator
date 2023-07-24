@@ -37,3 +37,5 @@ network_G:
 #### path
 path:
   pretrain_model_G: ../../../weights/180000_G.pth
+#  res_dir: /mnt/diske/AIGC_Plates
+
