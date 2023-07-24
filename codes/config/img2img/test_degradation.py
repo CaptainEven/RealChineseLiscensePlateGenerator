@@ -159,43 +159,43 @@ def generate_LR_HR_pairs(model,
 
     f_paths = []
     find_files(src_dir, f_paths, ext)
-    print("[Info]: find total {:d} files of [{:s}]"
+    print("\n[Info]: find total {:d} files of [{:s}]\n"
           .format(len(f_paths), ext))
-    for f_path in f_paths:
-        f_name = os.path.split(f_path)[-1]
+    with tqdm(total=len(f_paths)) as p_bar:
+        for f_path in f_paths:
+            f_name = os.path.split(f_path)[-1]
 
-        # ----- generate HR image
-        dst_hr_path = os.path.abspath(dst_HR_dir + "/" + f_name)
-        if not os.path.isfile(dst_hr_path):
-            shutil.copy(f_path, dst_HR_dir)  # copy HR img
-            print("--> {:s} [cp to] {:s}".
-                  format(f_name, dst_HR_dir))
+            # ----- generate HR image
+            dst_hr_path = os.path.abspath(dst_HR_dir + "/" + f_name)
+            if not os.path.isfile(dst_hr_path):
+                shutil.copy(f_path, dst_HR_dir)  # copy HR img
+                print("\b--> {:s} [cp to] {:s}\n".
+                      format(f_name, dst_HR_dir))
 
-        # ----- generate LR image
-        hr = cv2.imread(f_path, cv2.IMREAD_COLOR)
-        h, w, c = hr.shape
-        lr = cv2.resize(hr, (w // down_scale, h // down_scale), cv2.INTER_CUBIC)
-        dst_lr_path = os.path.abspath(dst_LR_sub_dir + "/" + f_name)
-        if not os.path.isfile(dst_lr_path):
-            LQ = util.img2tensor(lr)
-            LQ = LQ.unsqueeze(0)  # CHW -> NCHW
-
-            # ---------- Inference
-            noisy_state = sde.noise_state(LQ)
-            model.feed_data(noisy_state, LQ)
-            model.test(sde, save_states=True)
-
-            # ---------- Get output
-            visuals = model.get_current_visuals(need_GT=False)  # gpu -> cpu
-            output = visuals["Output"]
-            HQ = util.tensor2img(output.squeeze())  # uint8
-
-            # ----- Save output
+            # ----- generate LR image
+            hr = cv2.imread(f_path, cv2.IMREAD_COLOR)
+            h, w, c = hr.shape
+            lr = cv2.resize(hr, (w // down_scale, h // down_scale), cv2.INTER_CUBIC)
+            dst_lr_path = os.path.abspath(dst_LR_sub_dir + "/" + f_name)
             if not os.path.isfile(dst_lr_path):
+                LQ = util.img2tensor(lr)
+                LQ = LQ.unsqueeze(0)  # CHW -> NCHW
+
+                # ---------- Inference
+                noisy_state = sde.noise_state(LQ)
+                model.feed_data(noisy_state, LQ)
+                model.test(sde, save_states=True)
+
+                # ---------- Get output
+                visuals = model.get_current_visuals(need_GT=False)  # gpu -> cpu
+                output = visuals["Output"]
+                HQ = util.tensor2img(output.squeeze())  # uint8
+
+                # ----- Save output
                 util.save_img_uncompressed(dst_lr_path, HQ)  # save LR img
-                print("--> {:s} [generated at] {:s}"
+                print("\n--> {:s} [generated at] {:s}\n"
                       .format(f_name, dst_LR_sub_dir))
-        print("\n")
+            p_bar.update()
 
 
 def run_degradation(model,
