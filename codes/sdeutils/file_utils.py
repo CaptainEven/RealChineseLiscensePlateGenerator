@@ -2117,6 +2117,15 @@ def filter_img_pairs(lq_dir, hq_dir, ext=".jpg"):
             print("--> rm {:s}".format(lq_path))
 
 
+def get_val_dataet(src_dir, dst_dir):
+    """
+    @param src_dir:
+    @param dst_dir:
+    @return:
+    """
+    pass
+
+
 if __name__ == "__main__":
     # gen_HQs(img_path_list_f="../files/train_crnn_file_list221230.txt",
     #         HQ_dir="../../../HQ")

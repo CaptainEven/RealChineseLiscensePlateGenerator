@@ -335,8 +335,8 @@ def text2img(txt, model, generator, dataset_dir, n_gen=10):
     LQ_np_bgr = generator.generate_plate_special(plate_number=plate_number,
                                                  bg_color=plate_color,
                                                  is_double=is_double)
-    model_img_path = "/mnt/diske/{:s}.png".format(plate_number)
-    cv2.imwrite(model_img_path, LQ_np_bgr)
+    # model_img_path = "/mnt/diske/{:s}.png".format(plate_number)
+    # cv2.imwrite(model_img_path, LQ_np_bgr)
     # print("[Info]: model image(LQ) {:s} saved".format(model_img_path))
 
     # ---------- Generate HQ img
@@ -380,8 +380,9 @@ def text2img(txt, model, generator, dataset_dir, n_gen=10):
                 save_img_path = os.path.abspath(save_img_path)
                 # cv2.imwrite(save_img_path, HQ)
                 cv2.imencode(".png", HQ, [cv2.IMWRITE_PNG_COMPRESSION, 0])[1].tofile(save_img_path)
-                # print("\n--> {:s} generated\n".format(save_img_path))
+                print("\n--> {:s} generated\n".format(save_img_path))
                 p_bar.update()
+
     elif plate_layers == "double":
         print("[Warning]: double not surported now!")
         return
@@ -450,10 +451,11 @@ def test_text2img(args, model, sde):
                                               black_special)
             print("--> generating {:s}, {:3d}/{:3d}..."
                   .format(text, i + 1, args.num))
-            text2img(text, model, generator, dataset_dir, n_gen=3)
+            text2img(text, model, generator, dataset_dir, n_gen=1)
 
 
 if __name__ == "__main__":
     test_text2img(args, model, sde)
-    viz_txt2img_set(src_dir="../../../results/img2img/img_translate",
-                    viz_dir="/mnt/diske/vis_plate_gen_16")
+
+    # viz_txt2img_set(src_dir="../../../results/img2img/img_translate",
+    #                 viz_dir="/mnt/diske/vis_plate_gen_16")
