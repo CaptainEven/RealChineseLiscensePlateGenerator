@@ -12,7 +12,8 @@ class BaseModel:
         @param opt:
         """
         self.opt = opt
-        self.device = torch.device("cuda" if opt["gpu_ids"] is not None else "cpu")
+        gpu_ids = self.opt["gpu_ids"]
+        self.device = torch.device("cuda" if gpu_ids is not None else "cpu")
         self.is_train = opt["is_train"]
         self.schedulers = []
         self.optimizers = []

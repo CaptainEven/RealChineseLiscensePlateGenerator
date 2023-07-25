@@ -76,16 +76,6 @@ util.setup_logger("base",
 logger = logging.getLogger("base")
 logger.info(option.dict2str(opt))
 
-#### Create test dataset and dataloader
-test_loaders = []
-for phase, dataset_opt in sorted(opt["datasets"].items()):
-    test_set = create_dataset(dataset_opt)
-    test_loader = create_dataloader(test_set, dataset_opt)
-    logger.info("[Info]: number of test images in [{:s}]: {:d}"
-                .format(dataset_opt["name"],
-                        len(test_set)))
-    test_loaders.append(test_loader)
-
 # load pretrained model by default
 model = create_model(opt)
 device = model.device

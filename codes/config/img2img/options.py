@@ -35,7 +35,7 @@ def parse(opt_path, is_train=True):
     # export CUDA_VISIBLE_DEVICES
     gpu_list = ",".join(str(x) for x in opt["gpu_ids"])
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu_list
-    print("export CUDA_VISIBLE_DEVICES=" + gpu_list)
+    print("\n[Info]: export CUDA_VISIBLE_DEVICES=" + gpu_list, "\n")
 
     opt["is_train"] = is_train
 
