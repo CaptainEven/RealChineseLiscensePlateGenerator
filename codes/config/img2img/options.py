@@ -82,15 +82,18 @@ def parse(opt, is_train=True):
     for key, path in opt["path"].items():
         if path and key in opt["path"] and key != "strict_load":
             opt["path"][key] = osp.expanduser(path)
-    opt["path"]["root"] = osp.abspath(
-        osp.join(__file__, osp.pardir, osp.pardir, osp.pardir, osp.pardir)
-    )
+    opt["path"]["root"] = osp.abspath(osp.join(__file__,
+                                               osp.pardir,
+                                               osp.pardir,
+                                               osp.pardir,
+                                               osp.pardir))
     path = osp.abspath(__file__)
     config_dir = path.split("/")[-2]
     if is_train:
-        experiments_root = osp.join(
-            opt["path"]["root"], "experiments", config_dir, opt["name"]
-        )
+        experiments_root = osp.join(opt["path"]["root"],
+                                    "experiments",
+                                    config_dir,
+                                    opt["name"])
         opt["path"]["experiments_root"] = experiments_root
         opt["path"]["the_models"] = osp.join(experiments_root, "the_models")
         opt["path"]["training_state"] = osp.join(experiments_root, "training_state")
