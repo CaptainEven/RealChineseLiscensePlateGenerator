@@ -20,10 +20,9 @@ from codes.sdeutils.file_utils import OrderedYaml
 Loader, Dumper = OrderedYaml()
 
 
-def parse(opt_path, is_train=True):
+def parse_yaml(opt_path):
     """
     @param opt_path:
-    @param is_train:
     @return:
     """
     opt_path = os.path.abspath(opt_path)
@@ -32,7 +31,15 @@ def parse(opt_path, is_train=True):
 
     with open(opt_path, mode="r") as f:
         opt = yaml.load(f, Loader=Loader)
+    return opt
 
+
+def parse(opt, is_train=True):
+    """
+    @param opt:
+    @param is_train:
+    @return:
+    """
     # export CUDA_VISIBLE_DEVICES
     gpu_list = ",".join(str(x) for x in opt["gpu_ids"])
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu_list

@@ -277,7 +277,8 @@ if __name__ == "__main__":
         @param ext:
         @return:
         """
-        opt = option.parse(opt_path, is_train=False)
+        opt = option.parse_yaml(opt_path)
+        opt = option.parse(opt, is_train=False)
         sde, model = get_model(opt, is_train=False)
         generate_LR_HR_pairs(sde,
                              model,
