@@ -412,7 +412,7 @@ if __name__ == "__main__":
                         help="Path to options YMAL file.")
     parser.add_argument("-gpu_ids",
                         type=str,
-                        default="0,5,7",
+                        default="0,3,4,5,7",
                         help="")
     parser.add_argument("-s",
                         "--src_img_dir",
