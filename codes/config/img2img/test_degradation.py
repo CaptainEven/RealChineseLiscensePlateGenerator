@@ -410,43 +410,25 @@ if __name__ == "__main__":
                         type=str,
                         default="./options/test/degradation.yml",
                         help="Path to options YMAL file.")
-
-    parser.add_argument("--n_gpus",
-                        type=int,
-                        default=1,
-                        help="")
-    parser.add_argument("--dev_mode",
+    parser.add_argument("-mt_gpu_ids",
                         type=str,
-                        default="specified",
-                        help="free | specified")
-    parser.add_argument("-gpu_ids",
-                        type=str,
-                        default="0,5",
+                        default="0,5,7",
                         help="")
-
     parser.add_argument("-s",
-                        "--src_dir",
+                        "--src_img_dir",
                         type=str,
-                        default="/mnt/diske/RandomSamples",
-                        help="")
-    parser.add_argument("-d",
-                        "--dst_dir",
-                        type=str,
-                        default="/mnt/ssd/lyw/SISR_data",
+                        default="",
                         help="")
 
     args = parser.parse_args()
     args = edict(vars(args))  # vars()函数返回对象object的属性和属性值的字典对象。
 
-    if args.dev_mode == "specified":
-        n_threads = len(args.mt_gpu_ids.split(","))
-    elif args.dev_mode == "free":
-        n_threads = args.n_gpus
+    n_threads = len(args.mt_gpu_ids.split(","))
 
     # ----------
 
-    thread_f_paths = split_src_f_list(src_dir=args.src_dir,
-                                      dst_dir=args.dst_dir,
+    thread_f_paths = split_src_f_list(src_dir="/mnt/diske/RandomSamples",
+                                      dst_dir="/mnt/ssd/lyw/SISR_data",
                                       n_threads=n_threads,
                                       ext=".jpg",
                                       down_scale=2)
@@ -472,18 +454,18 @@ if __name__ == "__main__":
         opt["is_train"] = False
         opt["path"]["strict_load"] = True
 
-        # # ----- Set up the device
-        # # device = str(find_free_gpu())
-        # device = str(gpu_id)
-        # print("[Info]: using GPU {:s}.".format(device))
-        # device = select_device(device)
-        # opt.device = device
+        # ----- Set up the device
+        # device = str(find_free_gpu())
+        device = str(gpu_id)
+        print("[Info]: using GPU {:s}.".format(device))
+        device = select_device(device)
+        opt.device = device
 
         sde, model = get_model(opt, is_train=False)
         gen_HR_LR_pairs(sde, model, src_f_paths, dst_dir, down_scale)
 
 
-    gpu_ids = [int(x) for x in args.gpu_ids.split(",")]
+    gpu_ids = [int(x) for x in args.mt_gpu_ids.split(",")]
 
     # threads = []
     # for thread_i, gpu_id in enumerate(gpu_ids):
@@ -500,18 +482,10 @@ if __name__ == "__main__":
     #     thread.join()
 
     for process_i, gpu_id in enumerate(gpu_ids):
-        # ----- Set up the device
-        if args.dev_mode == "free":
-            device = str(find_free_gpu())
-        elif args.dev_mode == "specified":
-            device = str(gpu_id)
-        print("[Info]: using GPU {:s}.".format(device))
-        device = select_device(device)
-        args.opt.device = device
         process = multiprocessing.Process(target=task,
                                           args=(gpu_id,
                                                 args.opt,
                                                 thread_f_paths[process_i],
-                                                args.dst_dir,
+                                                "/mnt/ssd/lyw/SISR_data",
                                                 2))
         process.start()
