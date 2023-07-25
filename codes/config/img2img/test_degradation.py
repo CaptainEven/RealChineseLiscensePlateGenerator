@@ -410,7 +410,7 @@ if __name__ == "__main__":
                         type=str,
                         default="./options/test/degradation.yml",
                         help="Path to options YMAL file.")
-    parser.add_argument("-mt_gpu_ids",
+    parser.add_argument("-gpu_ids",
                         type=str,
                         default="0,5,7",
                         help="")
@@ -423,7 +423,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     args = edict(vars(args))  # vars()函数返回对象object的属性和属性值的字典对象。
 
-    n_threads = len(args.mt_gpu_ids.split(","))
+    n_threads = len(args.gpu_ids.split(","))
 
     # ----------
 
@@ -465,7 +465,7 @@ if __name__ == "__main__":
         gen_HR_LR_pairs(sde, model, src_f_paths, dst_dir, down_scale)
 
 
-    gpu_ids = [int(x) for x in args.mt_gpu_ids.split(",")]
+    gpu_ids = [int(x) for x in args.gpu_ids.split(",")]
 
     # threads = []
     # for thread_i, gpu_id in enumerate(gpu_ids):
