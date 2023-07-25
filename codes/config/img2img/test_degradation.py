@@ -266,8 +266,8 @@ if __name__ == "__main__":
 
     def task(gpu_id,
              opt_path,
-             src_dir="/mnt/diske/RandomSamples",
-             dst_dir="/mnt/ssd/lyw/SISR_data",
+             src_dir,
+             dst_dir,
              ext=".jpg"):
         """
         @param gpu_id:
@@ -278,6 +278,7 @@ if __name__ == "__main__":
         @return:
         """
         opt = option.parse_yaml(opt_path)
+        opt["gpu_ids"] = [gpu_id]
         opt = option.parse(opt, is_train=False)
         sde, model = get_model(opt, is_train=False)
         generate_LR_HR_pairs(sde,
@@ -287,6 +288,12 @@ if __name__ == "__main__":
                              ext=".jpg")
 
 
+    gpu_ids = [int(x) for x in args.mt_gpu_ids.split(",")]
     with ThreadPoolExecutor(max_workers=n_threads) as tasks:
-        for thread_i in range(n_threads):
-            task(sde)
+        for thread_i, gpu_id in enumerate(gpu_ids):
+            task(gpu_id,
+                 args.opt,
+                 src_dir="/mnt/diske/RandomSamples",
+                 dst_dir="/mnt/ssd/lyw/SISR_data",
+                 ext=".jpg")
+            tasks.submit(task, thread_i + 1)
