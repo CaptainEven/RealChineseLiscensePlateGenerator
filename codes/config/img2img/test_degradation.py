@@ -14,6 +14,7 @@ import torch
 from IPython import embed
 import lpips
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor
 
 to_be_inserted_path = os.path.abspath("../../")
 sys.path.insert(0, to_be_inserted_path)
@@ -37,58 +38,25 @@ from LicensePlateGenerator.generate_special_plate import generate_one_plate
 
 from gen_random_plate_string import generate_random_plate_text
 
-#### options
-parser = argparse.ArgumentParser()
-parser.add_argument("-opt",
-                    type=str,
-                    default="./options/test/degradation.yml",
-                    help="Path to options YMAL file.")
-parser.add_argument("-s",
-                    "--src_img_dir",
-                    type=str,
-                    default="",
-                    help="")
 
-args = parser.parse_args()
-args = edict(vars(args))  # vars()函数返回对象object的属性和属性值的字典对象。
+def get_model(opt, is_train=False):
+    """
+    @param opt:
+    @param is_train:
+    @return:
+    """
+    # load pretrained model by default
+    model = create_model(opt)
+    device = model.device
 
-opt = option.parse(args.opt, is_train=False)
+    sde = util.IRSDE(max_sigma=opt["sde"]["max_sigma"],
+                     T=opt["sde"]["T"],
+                     schedule=opt["sde"]["schedule"],
+                     eps=opt["sde"]["eps"],
+                     device=device)
+    sde.set_model(model.model)
 
-opt = option.dict_to_nonedict(opt)
-args.opt = opt
-
-#### mkdir and logger
-util.mkdirs((path
-             for key, path in opt["path"].items()
-             if not key == "experiments_root"
-             and "pretrain_model" not in key
-             and "resume" not in key))
-
-os.system("rm ./result")
-os.symlink(os.path.join(opt["path"]["results_root"], ".."), "./result")
-
-util.setup_logger("base",
-                  opt["path"]["log"],
-                  "test_" + opt["name"],
-                  level=logging.INFO,
-                  screen=True,
-                  tofile=True, )
-logger = logging.getLogger("base")
-logger.info(option.dict2str(opt))
-
-# load pretrained model by default
-model = create_model(opt)
-device = model.device
-
-sde = util.IRSDE(max_sigma=opt["sde"]["max_sigma"],
-                 T=opt["sde"]["T"],
-                 schedule=opt["sde"]["schedule"],
-                 eps=opt["sde"]["eps"],
-                 device=device)
-sde.set_model(model.model)
-
-lpips_fn = lpips.LPIPS(net='alex').to(device)
-scale = opt['degradation']['scale']
+    return sde, model
 
 
 def find_files(root, f_list, ext):
@@ -108,7 +76,8 @@ def find_files(root, f_list, ext):
             find_files(f_path, f_list, ext)
 
 
-def generate_LR_HR_pairs(model,
+def generate_LR_HR_pairs(sde,
+                         model,
                          src_dir,
                          dst_dir,
                          ext=".jpg",
@@ -188,11 +157,13 @@ def generate_LR_HR_pairs(model,
             p_bar.update()
 
 
-def run_degradation(model,
+def run_degradation(sde,
+                    model,
                     src_img_dir,
                     dst_img_dir,
                     ext=".jpg"):
     """
+    @param sde:
     @param model:
     @param src_img_dir:
     @param dst_img_dir:
@@ -256,7 +227,8 @@ def run_degradation(model,
             elif img_name.endswith(".png"):
                 cv2.imencode(".png", HQ, [cv2.IMWRITE_PNG_COMPRESSION, 0])[1].tofile(dst_save_path)
             else:
-                print("[Warning]: invalid file type: {:s}".format(img_name.split(".")[-1]))
+                print("[Warning]: invalid file type: {:s}"
+                      .format(img_name.split(".")[-1]))
                 continue
             print("--> {:s} saved".format(dst_save_path))
 
@@ -268,7 +240,52 @@ if __name__ == "__main__":
     #                 dst_img_dir="/mnt/diske/lyw/Degradations",
     #                 ext=".jpg")
 
-    generate_LR_HR_pairs(model,
-                         src_dir="/mnt/diske/RandomSamples",
-                         dst_dir="/mnt/ssd/lyw/SISR_data",
-                         ext=".jpg")
+    #### options
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-opt",
+                        type=str,
+                        default="./options/test/degradation.yml",
+                        help="Path to options YMAL file.")
+    parser.add_argument("-mt_gpu_ids",
+                        type=str,
+                        default="4,5,6",
+                        help="")
+    parser.add_argument("-s",
+                        "--src_img_dir",
+                        type=str,
+                        default="",
+                        help="")
+
+    args = parser.parse_args()
+    args = edict(vars(args))  # vars()函数返回对象object的属性和属性值的字典对象。
+
+    n_threads = len(args.mt_gpu_ids.split(","))
+
+
+    # ----------
+
+    def task(gpu_id,
+             opt_path,
+             src_dir="/mnt/diske/RandomSamples",
+             dst_dir="/mnt/ssd/lyw/SISR_data",
+             ext=".jpg"):
+        """
+        @param gpu_id:
+        @param opt_path:
+        @param src_dir:
+        @param dst_dir:
+        @param ext:
+        @return:
+        """
+        opt = option.parse(opt_path, is_train=False)
+        sde, model = get_model(opt, is_train=False)
+        generate_LR_HR_pairs(sde,
+                             model,
+                             src_dir="/mnt/diske/RandomSamples",
+                             dst_dir="/mnt/ssd/lyw/SISR_data",
+                             ext=".jpg")
+
+
+    with ThreadPoolExecutor(max_workers=n_threads) as tasks:
+        for thread_i in range(n_threads):
+            task(sde)

@@ -2,7 +2,7 @@ name: degradations
 suffix: ~  # add suffix to saved images
 model: denoising
 distortion: multi_degerations
-gpu_ids: [7]
+gpu_ids: [6]
 
 sde:
   max_sigma: 10

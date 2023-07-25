@@ -1,3 +1,5 @@
+# encoding=utf-8
+
 import logging
 
 logger = logging.getLogger("base")
@@ -9,11 +11,13 @@ def create_model(opt):
     @return:
     """
     model = opt["model"]
+    print("[Info]: model: {:s}".format(model))
 
     if model == "denoising":
         from .denoising_model import DenoisingModel as M
     else:
-        raise NotImplementedError("Model [{:s}] not recognized.".format(model))
+        raise NotImplementedError("Model [{:s}] not recognized."
+                                  .format(model))
 
     m = M(opt)
     logger.info("Model [{:s}] is created.".format(m.__class__.__name__))
