@@ -415,9 +415,14 @@ if __name__ == "__main__":
                         default="0,3,4,5,7",
                         help="")
     parser.add_argument("-s",
-                        "--src_img_dir",
+                        "--src_dir",
                         type=str,
-                        default="",
+                        default="/mnt/diske/RandomSamples",
+                        help="")
+    parser.add_argument("-d",
+                        "--dst_dir",
+                        type=str,
+                        default="/mnt/ssd/lyw/SISR_data",
                         help="")
 
     args = parser.parse_args()
@@ -427,8 +432,8 @@ if __name__ == "__main__":
 
     # ----------
 
-    thread_f_paths = split_src_f_list(src_dir="/mnt/diske/RandomSamples",
-                                      dst_dir="/mnt/ssd/lyw/SISR_data",
+    thread_f_paths = split_src_f_list(src_dir=args.src_dir,
+                                      dst_dir=args.dst_dir,
                                       n_threads=n_threads,
                                       ext=".jpg",
                                       down_scale=2)
@@ -486,6 +491,6 @@ if __name__ == "__main__":
                                           args=(gpu_id,
                                                 args.opt,
                                                 thread_f_paths[process_i],
-                                                "/mnt/ssd/lyw/SISR_data",
+                                                args.dst_dir,
                                                 2))
         process.start()
