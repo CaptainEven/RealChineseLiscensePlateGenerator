@@ -412,7 +412,7 @@ if __name__ == "__main__":
                         help="Path to options YMAL file.")
     parser.add_argument("-gpu_ids",
                         type=str,
-                        default="0,3,4,5,7",
+                        default="1,2",
                         help="")
     parser.add_argument("-s",
                         "--src_dir",
@@ -440,19 +440,18 @@ if __name__ == "__main__":
 
 
     def task(gpu_id,
-             opt_path,
+             opt,
              src_f_paths,
              dst_dir,
              down_scale=2):
         """
         @param gpu_id:
-        @param opt_path:
+        @param opt:
         @param src_f_paths:
         @param dst_dir:
         @param down_scale:
         @return:
         """
-        opt = option.parse_yaml(opt_path)
         opt["gpu_ids"] = [gpu_id]
         opt["dist"] = False
         opt["train"] = False
@@ -486,10 +485,11 @@ if __name__ == "__main__":
     # for thread in threads:
     #     thread.join()
 
+    opt = option.parse_yaml(args.opt)
     for process_i, gpu_id in enumerate(gpu_ids):
         process = multiprocessing.Process(target=task,
                                           args=(gpu_id,
-                                                args.opt,
+                                                opt,
                                                 thread_f_paths[process_i],
                                                 args.dst_dir,
                                                 2))
