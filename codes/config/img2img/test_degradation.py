@@ -416,7 +416,7 @@ if __name__ == "__main__":
                         help="specified | free")
     parser.add_argument("--gpu_ids",
                         type=str,
-                        default="0,1,2,3,4,5,7",
+                        default="0,1,2,3,4,5",
                         help="")
     parser.add_argument("--n_gpus",
                         type=int,

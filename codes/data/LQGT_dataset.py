@@ -76,6 +76,9 @@ class LQGTDataset(data.Dataset):
         # ---------- get GT image
         GT_path = self.GT_paths[idx]
         LR_path = self.LR_paths[idx]
+        GT_name = os.path.split(GT_path)[-1]
+        LR_name = os.path.split(LR_path)[-1]
+        assert GT_name == LR_name
 
         # return: Numpy float32, HWC, BGR, [0, 1]
         img_GT = util.read_img(self.GT_env, GT_path, None)
