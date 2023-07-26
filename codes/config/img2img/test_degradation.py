@@ -410,9 +410,17 @@ if __name__ == "__main__":
                         type=str,
                         default="./options/test/degradation.yml",
                         help="Path to options YMAL file.")
-    parser.add_argument("-gpu_ids",
+    parser.add_argument("--dev_mode",
+                        type=str,
+                        default="free",
+                        help="specified | free")
+    parser.add_argument("--gpu_ids",
                         type=str,
                         default="1,2",
+                        help="")
+    parser.add_argument("--n_gpus",
+                        type=int,
+                        default=2,
                         help="")
     parser.add_argument("-s",
                         "--src_dir",
@@ -439,11 +447,11 @@ if __name__ == "__main__":
                                       down_scale=2)
 
 
-    def task(gpu_id,
-             opt,
-             src_f_paths,
-             dst_dir,
-             down_scale=2):
+    def task_specify_gpu(gpu_id,
+                         opt,
+                         src_f_paths,
+                         dst_dir,
+                         down_scale=2):
         """
         @param gpu_id:
         @param opt:
@@ -469,6 +477,36 @@ if __name__ == "__main__":
         gen_HR_LR_pairs(sde, model, src_f_paths, dst_dir, down_scale)
 
 
+    def task_free_gpu(gpu_id,
+                      opt,
+                      src_f_paths,
+                      dst_dir,
+                      down_scale=2):
+        """
+        @param used_gpu_list:
+        @param opt:
+        @param src_f_paths:
+        @param dst_dir:
+        @param down_scale:
+        @return:
+        """
+        opt["gpu_ids"] = [gpu_id]
+        opt["dist"] = False
+        opt["train"] = False
+        opt["is_train"] = False
+        opt["path"]["strict_load"] = True
+
+        # ----- Set up the device
+        device = str(gpu_id)
+        print("[Info]: using GPU {:s}.".format(device))
+        device = select_device(device)
+        opt.device = device
+
+        sde, model = get_model(opt, is_train=False)
+        gen_HR_LR_pairs(sde, model, src_f_paths, dst_dir, down_scale)
+        return gpu_id
+
+
     gpu_ids = [int(x) for x in args.gpu_ids.split(",")]
 
     # threads = []
@@ -486,11 +524,27 @@ if __name__ == "__main__":
     #     thread.join()
 
     opt = option.parse_yaml(args.opt)
-    for process_i, gpu_id in enumerate(gpu_ids):
-        process = multiprocessing.Process(target=task,
-                                          args=(gpu_id,
-                                                opt,
-                                                thread_f_paths[process_i],
-                                                args.dst_dir,
-                                                2))
-        process.start()
+    if args.dev_mode == "specified":
+        for process_i, gpu_id in enumerate(gpu_ids):
+            process = multiprocessing.Process(target=task_specify_gpu,
+                                              args=(gpu_id,
+                                                    opt,
+                                                    thread_f_paths[process_i],
+                                                    args.dst_dir,
+                                                    2))
+            process.start()
+    elif args.dev_mode == "free":
+        used_gpu_list = []
+        for process_i in range(args.n_gpus):
+            gpu_id = find_free_gpu()
+            while gpu_id in used_gpu_list:
+                gpu_id = find_free_gpu()
+
+            used_gpu_list.append(gpu_id)
+            process = multiprocessing.Process(target=task_free_gpu,
+                                              args=(gpu_id,
+                                                    opt,
+                                                    thread_f_paths[process_i],
+                                                    args.dst_dir,
+                                                    2))
+            process.start()
