@@ -508,8 +508,8 @@ if __name__ == "__main__":
             gpu_id = find_free_gpu()
             while gpu_id in used_gpu_list:
                 gpu_id = find_free_gpu()
-
             used_gpu_list.append(gpu_id)
+
             process = multiprocessing.Process(target=task,
                                               args=(gpu_id,
                                                     opt,
