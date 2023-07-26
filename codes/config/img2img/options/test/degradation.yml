@@ -36,4 +36,6 @@ network_G:
 
 #### path
 path:
-  pretrain_model_G: ../../../weights/140000_dgn_G.pth
+#  pretrain_model_G: ../../../weights/140000_dgn_G.pth
+  pretrain_model_G: /mnt/ssd/lyw/140000_dgn_G.pth
+
