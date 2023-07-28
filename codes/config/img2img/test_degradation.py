@@ -104,10 +104,10 @@ def split_src_f_list(src_dir,
     dst_LR_dir = os.path.abspath(dst_dir + "/LR")
     if not os.path.isdir(dst_LR_dir):
         os.makedirs(dst_LR_dir)
-    dst_LR_sub_dir = os.path.abspath(dst_LR_dir + "/X{:d}"
-                                     .format(int(down_scale)))
-    if not os.path.isdir(dst_LR_sub_dir):
-        os.makedirs(dst_LR_sub_dir)
+    # dst_LR_sub_dir = os.path.abspath(dst_LR_dir + "/X{:d}"
+    #                                  .format(int(down_scale)))
+    # if not os.path.isdir(dst_LR_sub_dir):
+    #     os.makedirs(dst_LR_sub_dir)
 
     generated_f_paths = []
     find_files(dst_LR_dir, generated_f_paths, ext)
@@ -152,10 +152,6 @@ def gen_HR_LR_pairs(sde,
     dst_LR_dir = os.path.abspath(dst_dir + "/LR")
     if not os.path.isdir(dst_LR_dir):
         os.makedirs(dst_LR_dir)
-    dst_LR_sub_dir = os.path.abspath(dst_LR_dir + "/X{:d}"
-                                     .format(int(down_scale)))
-    if not os.path.isdir(dst_LR_sub_dir):
-        os.makedirs(dst_LR_sub_dir)
 
     with tqdm(total=len(src_f_list)) as p_bar:
         for src_f_path in src_f_list:
@@ -172,7 +168,7 @@ def gen_HR_LR_pairs(sde,
             hr = cv2.imread(src_f_path, cv2.IMREAD_COLOR)
             h, w, c = hr.shape
             lr = cv2.resize(hr, (w // down_scale, h // down_scale), cv2.INTER_CUBIC)
-            dst_lr_path = os.path.abspath(dst_LR_sub_dir + "/" + src_f_name)
+            dst_lr_path = os.path.abspath(dst_LR_dir + "/" + src_f_name)
             if not os.path.isfile(dst_lr_path):
                 LQ = util.img2tensor(lr)
                 LQ = LQ.unsqueeze(0)  # CHW -> NCHW
@@ -190,88 +186,7 @@ def gen_HR_LR_pairs(sde,
                 # ----- Save output
                 util.save_img_uncompressed(dst_lr_path, HQ)  # save LR img
                 print("\n--> {:s} [generated at] {:s}\n"
-                      .format(src_f_name, dst_LR_sub_dir))
-            p_bar.update()
-
-
-def generate_LR_HR_pairs(sde,
-                         model,
-                         src_dir,
-                         dst_dir,
-                         ext=".jpg",
-                         down_scale=2):
-    """
-    @param model:
-    @param src_dir:
-    @param dst_dir:
-    @param ext:
-    @param down_scale:
-    @return:
-    """
-    src_dir = os.path.abspath(src_dir)
-    if not os.path.isdir(src_dir):
-        print("[Err]: invalid src dir: {:s}, exit now!"
-              .format(src_dir))
-        exit(-1)
-
-    # dst_dir = os.path.abspath(dst_dir)
-    # if os.path.isdir(dst_dir):
-    #     shutil.rmtree(dst_dir)
-    # try:
-    #     os.makedirs(dst_dir)
-    # except Exception as e:
-    #     print(e)
-    #     exit(-1)
-
-    dst_HR_dir = os.path.abspath(dst_dir + "/HR")
-    if not os.path.isdir(dst_HR_dir):
-        os.makedirs(dst_HR_dir)
-    dst_LR_dir = os.path.abspath(dst_dir + "/LR")
-    if not os.path.isdir(dst_LR_dir):
-        os.makedirs(dst_LR_dir)
-    dst_LR_sub_dir = os.path.abspath(dst_LR_dir + "/X{:d}"
-                                     .format(int(down_scale)))
-    if not os.path.isdir(dst_LR_sub_dir):
-        os.makedirs(dst_LR_sub_dir)
-
-    f_paths = []
-    find_files(src_dir, f_paths, ext)
-    print("\n[Info]: find total {:d} files of [{:s}]\n"
-          .format(len(f_paths), ext))
-    with tqdm(total=len(f_paths)) as p_bar:
-        for f_path in f_paths:
-            f_name = os.path.split(f_path)[-1]
-
-            # ----- generate HR image
-            dst_hr_path = os.path.abspath(dst_HR_dir + "/" + f_name)
-            if not os.path.isfile(dst_hr_path):
-                shutil.copy(f_path, dst_HR_dir)  # copy HR img
-                print("\b--> {:s} [cp to] {:s}\n".
-                      format(f_name, dst_HR_dir))
-
-            # ----- generate LR image
-            hr = cv2.imread(f_path, cv2.IMREAD_COLOR)
-            h, w, c = hr.shape
-            lr = cv2.resize(hr, (w // down_scale, h // down_scale), cv2.INTER_CUBIC)
-            dst_lr_path = os.path.abspath(dst_LR_sub_dir + "/" + f_name)
-            if not os.path.isfile(dst_lr_path):
-                LQ = util.img2tensor(lr)
-                LQ = LQ.unsqueeze(0)  # CHW -> NCHW
-
-                # ---------- Inference
-                noisy_state = sde.noise_state(LQ)
-                model.feed_data(noisy_state, LQ)
-                model.test(sde, save_states=True)
-
-                # ---------- Get output
-                visuals = model.get_current_visuals(need_GT=False)  # gpu -> cpu
-                output = visuals["Output"]
-                HQ = util.tensor2img(output.squeeze())  # uint8
-
-                # ----- Save output
-                util.save_img_uncompressed(dst_lr_path, HQ)  # save LR img
-                print("\n--> {:s} [generated at] {:s}\n"
-                      .format(f_name, dst_LR_sub_dir))
+                      .format(src_f_name, dst_LR_dir))
             p_bar.update()
 
 
@@ -310,7 +225,7 @@ def run_degradation(sde,
           .format(len(img_paths), ext))
     for img_path in img_paths:
         img_name = os.path.split(img_path)[-1]
-        img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+        img = cv2.imread(img_path, cv2.IMREAD_COLOR)  # BGR
         if img is None:
             continue
         h, w, c = img.shape
@@ -430,7 +345,7 @@ if __name__ == "__main__":
     parser.add_argument("-d",
                         "--dst_dir",
                         type=str,
-                        default="/mnt/ssd/lyw/SISR_data",
+                        default="/mnt/ssd/lyw/SISR_data/X2",
                         help="")
 
     args = parser.parse_args()
@@ -477,21 +392,6 @@ if __name__ == "__main__":
 
 
     gpu_ids = [int(x) for x in args.gpu_ids.split(",")]
-
-    # threads = []
-    # for thread_i, gpu_id in enumerate(gpu_ids):
-    #     thread = threading.Thread(target=task,
-    #                               args=(gpu_id,
-    #                                     args.opt,
-    #                                     thread_f_paths[thread_i],
-    #                                     "/mnt/ssd/lyw/SISR_data",
-    #                                     ".jpg",
-    #                                     2))
-    #     thread.start()
-    #     threads.append(thread)
-    # for thread in threads:
-    #     thread.join()
-
     opt = option.parse_yaml(args.opt)
     if args.dev_mode == "specified":
         for process_i, gpu_id in enumerate(gpu_ids):
