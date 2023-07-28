@@ -104,10 +104,6 @@ def split_src_f_list(src_dir,
     dst_LR_dir = os.path.abspath(dst_dir + "/LR")
     if not os.path.isdir(dst_LR_dir):
         os.makedirs(dst_LR_dir)
-    # dst_LR_sub_dir = os.path.abspath(dst_LR_dir + "/X{:d}"
-    #                                  .format(int(down_scale)))
-    # if not os.path.isdir(dst_LR_sub_dir):
-    #     os.makedirs(dst_LR_sub_dir)
 
     generated_f_paths = []
     find_files(dst_LR_dir, generated_f_paths, ext)
