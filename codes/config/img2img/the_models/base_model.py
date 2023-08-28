@@ -1,3 +1,5 @@
+# encoding=utf-8
+
 import os
 from collections import OrderedDict
 
@@ -12,8 +14,8 @@ class BaseModel:
         @param opt:
         """
         self.opt = opt
-        if opt.device:
-            self.device = opt.device
+        if opt["device"]:
+            self.device = opt["device"]
         else:
             gpu_ids = self.opt["gpu_ids"]
             self.device = torch.device("cuda" if gpu_ids is not None else "cpu")

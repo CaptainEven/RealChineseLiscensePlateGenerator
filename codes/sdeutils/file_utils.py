@@ -2056,7 +2056,7 @@ def filter_imgs(img_dir):
                 continue
 
             h, w, c = img.shape
-            if w < 1000 or w > 2560:
+            if w < 1000 or w > 2560 or h < 512:
                 os.remove(f_path)
                 print("\n--> {:s} removed, img size: {:d}×{:d}\n"
                       .format(f_path, w, h))
@@ -2117,13 +2117,156 @@ def filter_img_pairs(lq_dir, hq_dir, ext=".jpg"):
             print("--> rm {:s}".format(lq_path))
 
 
-def get_val_dataet(src_dir, dst_dir):
+def cp_img_pairs(src_root, dst_root, ext=".jpg"):
     """
-    @param src_dir:
-    @param dst_dir:
+    @param src_root:
+    @param dst_root:
+    @param ext:
     @return:
     """
-    pass
+    src_root = os.path.abspath(src_root)
+    if not os.path.isdir(src_root):
+        print("[Err]: invalid src root: {:s}"
+              .format(src_root))
+        exit(-1)
+
+    dst_root = os.path.abspath(dst_root)
+    if not os.path.isdir(dst_root):
+        print("[Err]: invalid src root: {:s}"
+              .format(dst_root))
+        exit(-1)
+
+    src_HR_dir = os.path.abspath(src_root + "/HR")
+    src_LR_dir = os.path.abspath(src_root + "/LR")
+    if not os.path.isdir(src_HR_dir):
+        print("[Err]: invalid src HR dir: {:s}"
+              .format(src_HR_dir))
+        exit(-1)
+
+    if not os.path.isdir(src_LR_dir):
+        print("[Err]: invalid src LR dir: {:s}"
+              .format(src_LR_dir))
+        exit(-1)
+
+    dst_HR_dir = os.path.abspath(dst_root + "/HR")
+    dst_LR_dir = os.path.abspath(dst_root + "/LR")
+    if not os.path.isdir(dst_HR_dir):
+        print("[Err]: invalid dst HR dir: {:s}"
+              .format(dst_HR_dir))
+        exit(-1)
+    if not os.path.isdir(dst_LR_dir):
+        print("[Err]: invalid dst LR dir: {:s}"
+              .format(dst_LR_dir))
+        exit(-1)
+
+    src_HR_paths = []
+    src_LR_paths = []
+    find_files(src_HR_dir, src_HR_paths, ext)
+    find_files(src_LR_dir, src_LR_paths, ext)
+    src_HR_paths.sort()
+    src_LR_paths.sort()
+
+    assert len(src_HR_paths) == len(src_LR_paths)
+    for src_HR_path, src_LR_path in zip(src_HR_paths, src_LR_paths):
+        src_HR_name = os.path.split(src_HR_path)[-1]
+        src_LR_name = os.path.split(src_LR_path)[-1]
+        assert src_HR_name == src_LR_name
+
+        dst_HR_path = os.path.abspath(dst_HR_dir + "/{:s}".format(src_HR_name))
+        dst_LR_path = os.path.abspath(dst_LR_dir + "/{:s}".format(src_LR_name))
+
+        if not os.path.isfile(dst_HR_path):
+            shutil.copyfile(src_HR_path, dst_HR_path)
+            print("=> {:s} [cp to] {:s}"
+                  .format(src_HR_name, dst_HR_dir))
+        if not os.path.isfile(dst_LR_path):
+            shutil.copyfile(src_LR_path, dst_LR_path)
+            print("=> {:s} [cp to] {:s}"
+                  .format(src_LR_name, dst_LR_dir))
+
+
+def process_biying_to_DGN(Biying_root,
+                          dst_root):
+    """
+    @param Biying_root:
+    @param dst_root:
+    @return:
+    """
+    Biying_root = os.path.abspath(Biying_root)
+    if not os.path.isdir(Biying_root):
+        print("[Err]: invalid Biying root: {:s}"
+              .format(Biying_root))
+        exit(-1)
+
+    src_HR_dir = os.path.abspath(Biying_root + "/trainset/HR")
+    src_LR_dir = os.path.abspath(Biying_root + "/trainset/LR")
+    if not os.path.isdir(src_HR_dir):
+        print("[Err]: invalid original path: {:s}".format(src_HR_dir))
+        exit(-1)
+    if not os.path.isdir(src_LR_dir):
+        print("[Err]: invalid bokeh path: {:s}".format(src_LR_dir))
+        exit(-1)
+
+    dst_root = os.path.abspath(dst_root)
+    dst_HR_dir = os.path.abspath(dst_root + "/HR")
+    dst_LR_dir = os.path.abspath(dst_root + "/LR")
+    if not os.path.isdir(dst_root):
+        try:
+            os.makedirs(dst_root)
+            print("{:s} made".format(dst_root))
+
+            if not os.path.isdir(dst_HR_dir):
+                os.makedirs(dst_HR_dir)
+                print("{:s} made".format(dst_HR_dir))
+
+            if not os.path.isdir(dst_LR_dir):
+                os.makedirs(dst_LR_dir)
+                print("{:s} made".format(dst_LR_dir))
+
+        except Exception as e:
+            print(e)
+
+    src_HR_paths = []
+    src_LR_paths = []
+    find_files(src_HR_dir, src_HR_paths, ext=".jpg")
+    find_files(src_LR_dir, src_LR_paths, ext=".jpg")
+    src_HR_paths.sort()
+    src_LR_paths.sort()
+
+    assert len(src_HR_paths) == len(src_LR_paths)
+
+    for src_HR_path, src_LR_path in zip(src_HR_paths, src_LR_paths):
+        HR_name = os.path.split(src_HR_path)[-1]
+        LR_name = os.path.split(src_LR_path)[-1]
+        assert HR_name == LR_name
+
+        src_HR_img = cv2.imread(src_HR_path, cv2.IMREAD_COLOR)
+        src_LR_img = cv2.imread(src_LR_path, cv2.IMREAD_COLOR)
+        h_HR, w_HR, c_HR = src_HR_img.shape
+        h_LR, w_LR, c_LR = src_LR_img.shape
+
+        # generate LR image
+        dst_LR_path = os.path.abspath(dst_LR_dir + "/{:s}".format(LR_name))
+        if not os.path.isfile(dst_LR_path):
+            shutil.copyfile(src_LR_path, dst_LR_path)
+            print("=> {:s} [cp to] {:s}".format(LR_name, dst_HR_dir))
+
+        # generate HR image(equal size of LR)
+        LR_size = (w_LR, h_LR)
+        idx = np.random.randint(1, 6)
+        if idx == 1:
+            new_HR_img = cv2.resize(src_HR_img, LR_size, cv2.INTER_NEAREST)
+        elif idx == 2:
+            new_HR_img = cv2.resize(src_HR_img, LR_size, cv2.INTER_LINEAR)
+        elif idx == 3:
+            new_HR_img = cv2.resize(src_HR_img, LR_size, cv2.INTER_CUBIC)
+        elif idx == 4:
+            new_HR_img = cv2.resize(src_HR_img, LR_size, cv2.INTER_AREA)
+        elif idx == 5:
+            new_HR_img = cv2.resize(src_HR_img, LR_size, cv2.INTER_LANCZOS4)
+
+        dst_HR_path = os.path.abspath(dst_HR_dir + "/{:s}".format(HR_name))
+        cv2.imwrite(dst_HR_path, new_HR_img)
 
 
 if __name__ == "__main__":
@@ -2219,15 +2362,20 @@ if __name__ == "__main__":
     #                                 ratio=0.0001)
 
     # -----
-    run_random_sample_imgs(src_root="/mnt/diske/Picture_data",
-                           dst_dir="/mnt/diske/RandomSamples",
-                           ext=".jpg",
-                           ratio=0.005)
-    filter_imgs(img_dir="/mnt/diske/RandomSamples")
+    # run_random_sample_imgs(src_root="/mnt/diske/Picture_data",
+    #                        dst_dir="/mnt/diske/RandomSamples",
+    #                        ext=".jpg",
+    #                        ratio=0.005)
+    # filter_imgs(img_dir="/mnt/diske/RandomSamples_2")
 
     # -----
     # filter_img_pairs(lq_dir="/mnt/ssd/lyw/SISR_data/LR/X2",
     #                  hq_dir="/mnt/ssd/lyw/SISR_data/HR",
     #                  ext=".jpg")
+
+    # cp_img_pairs(src_root="/mnt/diske/lyw/EBB/trainset",
+    #              dst_root="/mnt/ssd/lyw/img2img_data/DGN")
+
+    # process_biying_to_DGN()
 
     print("--> Done.")

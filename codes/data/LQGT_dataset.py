@@ -60,6 +60,7 @@ class LQGTDataset(data.Dataset):
                     .format(len(self.LR_paths), len(self.GT_paths))
         self.random_scale_list = [1]
 
+        print("[Info]: dataset size: {:d}".format(len(self.GT_paths)))
         print("GT size:\n", self.GT_size)
         print("LR size:\n", self.LR_size)
 

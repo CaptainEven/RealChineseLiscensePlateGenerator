@@ -34,13 +34,14 @@ def parse_yaml(opt_path):
     return opt
 
 
-def parse(opt, is_train=True):
+def parse(opt_path, is_train=True):
     """
-    @param opt:
+    @param opt_path:
     @param is_train:
     @return:
     """
     # export CUDA_VISIBLE_DEVICES
+    opt = parse_yaml(opt_path)
     gpu_list = ",".join(str(x) for x in opt["gpu_ids"])
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu_list
     print("\n[Info]: export CUDA_VISIBLE_DEVICES=" + gpu_list, "\n")

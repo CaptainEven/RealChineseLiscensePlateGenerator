@@ -4,7 +4,6 @@ import argparse
 import logging
 import os.path
 import shutil
-import sys
 import time
 from collections import OrderedDict
 import torchvision.utils as tvutils
@@ -18,6 +17,8 @@ from tqdm import tqdm
 import threading
 import multiprocessing
 from concurrent.futures import ThreadPoolExecutor
+
+import sys
 
 to_be_inserted_path = os.path.abspath("../../")
 sys.path.insert(0, to_be_inserted_path)
@@ -126,6 +127,28 @@ def split_src_f_list(src_dir,
     return thread_f_paths
 
 
+def random_down_sample(img, down_scale):
+    """
+    @param img:
+    @param down_scale:
+    @return:
+    """
+    idx = np.random.randint(1, 6)
+    h, w = img.shape[:2]
+    new_wh = (w // down_scale, h // down_scale)
+    if idx == 1:
+        img_down_sample = cv2.resize(img, new_wh, cv2.INTER_NEAREST)
+    elif idx == 2:
+        img_down_sample = cv2.resize(img, new_wh, cv2.INTER_LINEAR)
+    elif idx == 3:
+        img_down_sample = cv2.resize(img, new_wh, cv2.INTER_CUBIC)
+    elif idx == 4:
+        img_down_sample = cv2.resize(img, new_wh, cv2.INTER_AREA)
+    elif idx == 5:
+        img_down_sample = cv2.resize(img, new_wh, cv2.INTER_LANCZOS4)
+    return img_down_sample
+
+
 def gen_HR_LR_pairs(sde,
                     model,
                     src_f_list,
@@ -163,21 +186,29 @@ def gen_HR_LR_pairs(sde,
             # ----- generate LR image
             hr = cv2.imread(src_f_path, cv2.IMREAD_COLOR)
             h, w, c = hr.shape
-            lr = cv2.resize(hr, (w // down_scale, h // down_scale), cv2.INTER_CUBIC)
+            if max(w, h) > 2560:
+                print("\n[Warning]: too big img size of {:s}, exit now!\n"
+                      .format(src_f_path))
+                exit(-1)
+
+            idx = np.random.randint(1, 6)
+            # lr = cv2.resize(hr, (w // down_scale, h // down_scale), cv2.INTER_CUBIC)
+            lr = random_down_sample(hr, down_scale)
             dst_lr_path = os.path.abspath(dst_LR_dir + "/" + src_f_name)
             if not os.path.isfile(dst_lr_path):
                 LQ = util.img2tensor(lr)
                 LQ = LQ.unsqueeze(0)  # CHW -> NCHW
 
                 # ---------- Inference
-                noisy_state = sde.noise_state(LQ)
-                model.feed_data(noisy_state, LQ)
-                model.test(sde, save_states=True)
+                with torch.no_grad():
+                    noisy_state = sde.noise_state(LQ)
+                    model.feed_data(noisy_state, LQ)
+                    model.test(sde, save_states=True)
 
-                # ---------- Get output
-                visuals = model.get_current_visuals(need_GT=False)  # gpu -> cpu
-                output = visuals["Output"]
-                HQ = util.tensor2img(output.squeeze())  # uint8
+                    # ---------- Get output
+                    visuals = model.get_current_visuals(need_GT=False)  # gpu -> cpu
+                    output = visuals["Output"]
+                    HQ = util.tensor2img(output.squeeze())  # uint8
 
                 # ----- Save output
                 util.save_img_uncompressed(dst_lr_path, HQ)  # save LR img
@@ -327,7 +358,7 @@ if __name__ == "__main__":
                         help="specified | free")
     parser.add_argument("--gpu_ids",
                         type=str,
-                        default="0,1,2,3,4,5",
+                        default="2,4,5,7",
                         help="")
     parser.add_argument("--n_gpus",
                         type=int,
@@ -336,7 +367,7 @@ if __name__ == "__main__":
     parser.add_argument("-s",
                         "--src_dir",
                         type=str,
-                        default="/mnt/diske/RandomSamples",
+                        default="/mnt/diske/RandomSamples_2",
                         help="")
     parser.add_argument("-d",
                         "--dst_dir",

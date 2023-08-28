@@ -3,7 +3,7 @@ name: dgn
 use_tb_logger: true
 model: denoising
 distortion: multi_degerations
-gpu_ids: [7]
+gpu_ids: [ 7 ]
 
 sde:
   max_sigma: 10
@@ -24,8 +24,8 @@ datasets:
   train:
     name: Train_Dataset
     mode: LQGT
-    dataroot_GT: ../../img2img_data/DGN/LR  # GT
-    dataroot_LQ: ../../img2img_data/DGN/HR  # HR mapping to LR
+    dataroot_GT: /mnt/ssd/lyw/img2img_data/DGN/LR  # GT
+    dataroot_LQ: /mnt/ssd/lyw/img2img_data/DGN/HR  # HR mapping to LR
 
     use_shuffle: true
     n_workers: 2  # per GPU
@@ -54,20 +54,20 @@ network_G:
 
 #### path
 path:
-  pretrain_model_G:  ../weights/70000_dng_G.pth
+  pretrain_model_G: /mnt/ssd/lyw/140000_dgn_G.pth #../weights/70000_dng_G.pth
   strict_load: true
   resume_state: # ../states/455000.state
 
 #### training settings: learning rate scheme, loss
 train:
   optimizer: Adam  # Adam, AdamW, Lion
-  lr_G: !!float 5e-5  # 1e-4
+  lr_G: !!float 1e-4  # 1e-4
   lr_scheme: TrueCosineAnnealingLR # MultiStepLR
   beta1: 0.9
   beta2: 0.99
   niter: 700000
   warmup_iter: -1  # no warm up
-  lr_steps: [10, 30, 60, 90]
+  lr_steps: [ 10, 30, 60, 90 ]
   lr_gamma: 0.5
   eta_min: !!float 1e-7
 

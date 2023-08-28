@@ -30,7 +30,7 @@ def _get_paths_from_images(path):
     @return:
     """
     path = os.path.abspath(path)
-    print("[Info]: path: {:s}".format(path))
+    print("[Info]: image dir path: {:s}".format(path))
 
     assert os.path.isdir(path), '{:s} is not a valid directory' \
         .format(path)

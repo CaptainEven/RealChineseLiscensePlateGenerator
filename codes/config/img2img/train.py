@@ -53,7 +53,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-opt",
                         type=str,
-                        default="./options/train/ir-sde.yml",
+                        default="./options/train/sh_dgn.yml",
                         help="Path to option YMAL file.")
     parser.add_argument("--launcher",
                         choices=["none", "pytorch"],
@@ -84,7 +84,8 @@ def main():
         opt["dist"] = True
         opt["dist"] = True
         init_dist()
-        world_size = (torch.distributed.get_world_size())  # Returns the number of processes in the current process group
+        world_size = (
+            torch.distributed.get_world_size())  # Returns the number of processes in the current process group
         rank = torch.distributed.get_rank()  # Returns the rank of current process group
         # util.set_random_seed(seed)
 
@@ -97,10 +98,8 @@ def main():
     if opt["path"].get("resume_state", None):
         # distributed resuming: all load into default GPU
         device_id = torch.cuda.current_device()
-        resume_state = torch.load(
-            opt["path"]["resume_state"],
-            map_location=lambda storage, loc: storage.cuda(device_id),
-        )
+        resume_state = torch.load(opt["path"]["resume_state"],
+                                  map_location=lambda storage, loc: storage.cuda(device_id), )
         option.check_resume(opt, resume_state["iter"])  # check resume options
     else:
         resume_state = None
