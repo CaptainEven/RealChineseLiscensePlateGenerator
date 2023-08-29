@@ -358,7 +358,7 @@ if __name__ == "__main__":
                         help="specified | free")
     parser.add_argument("--gpu_ids",
                         type=str,
-                        default="2,4,5,7",
+                        default="3,4,5,6",
                         help="")
     parser.add_argument("--n_gpus",
                         type=int,
@@ -378,7 +378,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     args = edict(vars(args))  # vars()函数返回对象object的属性和属性值的字典对象。
 
-    n_threads = len(args.gpu_ids.split(","))
+    gpu_ids = [int(x) for x in args.gpu_ids.split(",")]
+    n_threads = len(gpu_ids)
 
     # ----------
 
@@ -387,6 +388,24 @@ if __name__ == "__main__":
                                       n_threads=n_threads,
                                       ext=".jpg",
                                       down_scale=2)
+
+    if n_threads == 1:
+        opt = option.parse_yaml(args.opt)
+        gpu_id = gpu_ids[0]
+        opt["gpu_ids"] = [gpu_id]
+        opt["dist"] = False
+        opt["train"] = False
+        opt["is_train"] = False
+        opt["path"]["strict_load"] = True
+
+        # ----- Set up the device
+        device = str(gpu_id)
+        print("[Info]: using GPU {:s}.".format(device))
+        device = select_device(device)
+        opt.device = device
+
+        sde, model = get_model(opt, is_train=False)
+        gen_HR_LR_pairs(sde, model, thread_f_paths[0], args.dst_dir, 2)
 
 
     def task(gpu_id,
@@ -418,7 +437,6 @@ if __name__ == "__main__":
         gen_HR_LR_pairs(sde, model, src_f_paths, dst_dir, down_scale)
 
 
-    gpu_ids = [int(x) for x in args.gpu_ids.split(",")]
     opt = option.parse_yaml(args.opt)
     if args.dev_mode == "specified":
         for process_i, gpu_id in enumerate(gpu_ids):

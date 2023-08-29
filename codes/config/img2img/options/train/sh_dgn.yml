@@ -54,7 +54,8 @@ network_G:
 
 #### path
 path:
-  pretrain_model_G: /mnt/ssd/lyw/140000_dgn_G.pth #../weights/70000_dng_G.pth
+#  pretrain_model_G: /mnt/ssd/lyw/140000_dgn_G.pth
+  pretrain_model_G: ../weights/5000_G.pth
   strict_load: true
   resume_state: # ../states/455000.state
 

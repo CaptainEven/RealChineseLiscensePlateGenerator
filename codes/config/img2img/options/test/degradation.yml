@@ -2,7 +2,7 @@ name: degradations
 suffix: ~  # add suffix to saved images
 model: denoising
 distortion: multi_degerations
-gpu_ids: [6]
+gpu_ids: [4]
 
 sde:
   max_sigma: 10
@@ -36,6 +36,6 @@ network_G:
 
 #### path
 path:
-#  pretrain_model_G: ../../../weights/140000_dgn_G.pth
-  pretrain_model_G: /mnt/ssd/lyw/140000_dgn_G.pth
+  pretrain_model_G: ../../../weights/50000_G.pth
+#  pretrain_model_G: /mnt/ssd/lyw/140000_dgn_G.pth
 
