@@ -25,27 +25,32 @@ from codes.data.data_sampler import DistIterSampler
 
 from codes.data.util import bgr2ycbcr
 
+os.environ['MASTER_ADDR'] = 'localhost'
+os.environ['MASTER_PORT'] = '6789'
 
 # torch.autograd.set_detect_anomaly(True)
 
 def init_dist(backend="nccl", **kwargs):
     """
+    initialization for distributed training
     @param backend:
     @param kwargs:
     @return:
     """
-    """ initialization for distributed training"""
     # if mp.get_start_method(allow_none=True) is None:
-    if (
-            mp.get_start_method(allow_none=True) != "spawn"
-    ):  # Return the name of start method used for starting processes
+    if mp.get_start_method(allow_none=True) != "spawn":  # Return the name of start method used for starting processes
         mp.set_start_method("spawn", force=True)  ##'spawn' is the default on Windows
-    rank = int(os.environ["RANK"])  # system env process ranks
-    num_gpus = torch.cuda.device_count()  # Returns the number of GPUs available
+
+    # system env process ranks
+    rank = int(os.environ["RANK"])
+
+    # Returns the number of GPUs available
+    num_gpus = torch.cuda.device_count()
+
     torch.cuda.set_device(rank % num_gpus)
-    dist.init_process_group(
-        backend=backend, **kwargs
-    )  # Initializes the default distributed process group
+
+    # Initializes the default distributed process group
+    dist.init_process_group(backend=backend, **kwargs)
 
 
 def main():
@@ -57,7 +62,7 @@ def main():
                         help="Path to option YMAL file.")
     parser.add_argument("--launcher",
                         choices=["none", "pytorch"],
-                        default="none",
+                        default="pytorch",  # none
                         help="job launcher")
     parser.add_argument("--local_rank",
                         type=int,
@@ -78,15 +83,20 @@ def main():
     if args.launcher == "none":  # disabled distributed training
         opt["dist"] = False
         opt["dist"] = False
-        rank = -1
+        rank = -1  # rank = -1 means No DDP?
+        print("rank: ", rank)
         print("Disabled distributed training.")
     else:
         opt["dist"] = True
         opt["dist"] = True
         init_dist()
-        world_size = (
-            torch.distributed.get_world_size())  # Returns the number of processes in the current process group
-        rank = torch.distributed.get_rank()  # Returns the rank of current process group
+
+        # Returns the number of processes in the current process group
+        world_size = (torch.distributed.get_world_size())
+
+        # Returns the rank of current process group
+        rank = torch.distributed.get_rank()
+        print("rank: ", rank)
         # util.set_random_seed(seed)
 
     torch.backends.cudnn.benchmark = True

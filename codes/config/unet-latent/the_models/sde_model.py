@@ -32,9 +32,8 @@ class SDEModel(BaseModel):
         # define network and load pretrained the_models
         self.model = networks.define_G(opt).to(self.device)
         if opt["dist"]:
-            self.model = DistributedDataParallel(
-                self.model, device_ids=[torch.cuda.current_device()]
-            )
+            self.model = DistributedDataParallel(self.model,
+                                                 device_ids=[torch.cuda.current_device()])
         # else:
         #     self.model = DataParallel(self.model)
         # print network
@@ -52,10 +51,7 @@ class SDEModel(BaseModel):
             # optimizers
             wd_G = train_opt["weight_decay_G"] if train_opt["weight_decay_G"] else 0
             optim_params = []
-            for (
-                k,
-                v,
-            ) in self.model.named_parameters():  # can optimize for a part of the model
+            for (k, v,) in self.model.named_parameters():  # can optimize for a part of the model
                 if v.requires_grad:
                     optim_params.append(v)
                 else:
@@ -100,7 +96,7 @@ class SDEModel(BaseModel):
             self.log_dict = OrderedDict()
 
     def feed_data(self, state, LQ, GT=None):
-        self.state = state.to(self.device)    # noisy_state
+        self.state = state.to(self.device)  # noisy_state
         self.condition = LQ.to(self.device)  # LQ
         if GT is not None:
             self.state_0 = GT.to(self.device)  # GT
@@ -156,7 +152,7 @@ class SDEModel(BaseModel):
     def print_network(self):
         s, n = self.get_network_description(self.model)
         if isinstance(self.model, nn.DataParallel) or isinstance(
-            self.model, DistributedDataParallel
+                self.model, DistributedDataParallel
         ):
             net_struc_str = "{} - {}".format(
                 self.model.__class__.__name__, self.model.module.__class__.__name__
@@ -179,4 +175,3 @@ class SDEModel(BaseModel):
 
     def save(self, iter_label):
         self.save_network(self.model, "G", iter_label)
-

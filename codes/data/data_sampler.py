@@ -29,6 +29,12 @@ class DistIterSampler(Sampler):
     """
 
     def __init__(self, dataset, num_replicas=None, rank=None, ratio=100):
+        """
+        @param dataset:
+        @param num_replicas:
+        @param rank:
+        @param ratio:
+        """
         if num_replicas is None:
             if not dist.is_available():
                 raise RuntimeError("Requires distributed package to be available")
@@ -56,7 +62,7 @@ class DistIterSampler(Sampler):
         indices = [v % dsize for v in indices]
 
         # subsample
-        indices = indices[self.rank : self.total_size : self.num_replicas]
+        indices = indices[self.rank: self.total_size: self.num_replicas]
         assert len(indices) == self.num_samples
 
         return iter(indices)

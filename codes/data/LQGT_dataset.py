@@ -47,6 +47,8 @@ class LQGTDataset(data.Dataset):
 
         # read image list from lmdb or image files
         if opt["data_type"] == "img":
+            print("=> dataroot_LQ: {:s}".format(opt["dataroot_LQ"]))
+            print("=> dataroot_GT: {:s}".format(opt["dataroot_GT"]))
             self.LR_paths = util.get_image_paths(opt["data_type"], opt["dataroot_LQ"])  # LR list
             self.GT_paths = util.get_image_paths(opt["data_type"], opt["dataroot_GT"])  # GT list
         else:

@@ -3,7 +3,7 @@ name: dgn
 use_tb_logger: true
 model: denoising
 distortion: multi_degerations
-gpu_ids: [ 7 ]
+gpu_ids: [2,3]
 
 sde:
   max_sigma: 10
@@ -26,12 +26,14 @@ datasets:
     mode: LQGT
     dataroot_GT: /mnt/ssd/lyw/img2img_data/DGN/LR  # GT
     dataroot_LQ: /mnt/ssd/lyw/img2img_data/DGN/HR  # HR mapping to LR
+#    dataroot_GT: /mnt/diske/lyw/EBB/trainset/LR  # GT
+#    dataroot_LQ: /mnt/diske/lyw/EBB/trainset/HR  # HR mapping to LR
 
     use_shuffle: true
     n_workers: 2  # per GPU
-    batch_size: 12  # 12
-    GT_size: 128, 128
-    LR_size: 128, 128
+    batch_size: 16  # 12
+    GT_size: 96, 96  # 128, 128
+    LR_size: 96, 96  # 128, 128
     use_flip: false
     use_rot: false
     color: RGB
@@ -55,7 +57,7 @@ network_G:
 #### path
 path:
 #  pretrain_model_G: /mnt/ssd/lyw/140000_dgn_G.pth
-  pretrain_model_G: ../weights/5000_G.pth
+  pretrain_model_G: /mnt/ssd/lyw/SDE/weights/20000_G.pth
   strict_load: true
   resume_state: # ../states/455000.state
 

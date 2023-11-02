@@ -2077,6 +2077,47 @@ def filter_imgs(img_dir):
     print("[Info]: total {:d} files remained".format(cnt))
 
 
+def filter_and_copy(src_dir, dst_dir, ext=".jpg"):
+    """
+    @param src_dir:
+    @param dst_dir:
+    @param ext:
+    @return:
+    """
+    src_dir = os.path.abspath(src_dir)
+    if not os.path.isdir(src_dir):
+        print("[Err]: invalid src dir: {:s}".format(src_dir))
+        exit(-1)
+
+    dst_dir = os.path.abspath(dst_dir)
+    if not os.path.isdir(dst_dir):
+        try:
+            os.makedirs(dst_dir)
+        except Exception as e:
+            print(e)
+            exit(-1)
+
+    src_f_paths = []
+    find_files(src_dir, src_f_paths, ext)
+    print("[Info]: find total {:d} files of [{:s}]"
+          .format(len(src_f_paths), ext))
+
+    for src_f_path in src_f_paths:
+        img = cv2.imread(src_f_path, cv2.IMREAD_COLOR)
+        f_name = os.path.split(src_f_path)[-1]
+        if img is None:
+            print("\n[Warning]: read img failed\n".format(f_name))
+            continue
+
+        h, w, c = img.shape
+        if w < 1000 or w > 2560 or h < 512:
+            continue
+        else:
+            dst_f_path = os.path.abspath(dst_dir + "/{:s}".format(f_name))
+            if not os.path.isfile(dst_f_path):
+                shutil.copyfile(src_f_path, dst_f_path)
+                print("=> {:s} [cp to] {:s}".format(f_name, dst_dir))
+
 def filter_img_pairs(lq_dir, hq_dir, ext=".jpg"):
     """
     @param lq_dir:
@@ -2115,6 +2156,31 @@ def filter_img_pairs(lq_dir, hq_dir, ext=".jpg"):
                 continue
             os.remove(lq_path)
             print("--> rm {:s}".format(lq_path))
+
+
+def add_prefix(dir_path, prefix, ext=".jpg"):
+    """
+    @param dir_path:
+    @param prefix:
+    @param ext:
+    @return:
+    """
+    dir_path = os.path.abspath(dir_path)
+    if not os.path.isdir(dir_path):
+        print("[Err]: invalid dir path: {:s}"
+              .format(dir_path))
+        exit(-1)
+
+    file_paths = []
+    find_files(dir_path, file_paths, ext=ext)
+    for f_path in file_paths:
+        f_name = os.path.split(f_path)[-1]
+        # base_name, suffix = f_name.split(".")
+        # new_name = prefix + "_" + base_name + ".{:s}".format(suffix)
+        new_name = prefix + "_" + f_name
+        new_path = os.path.abspath(dir_path + "/" + new_name)
+        os.rename(f_path, new_path)
+        print("--> {:s} [rename to] {:s}\n".format(f_path, new_path))
 
 
 def cp_img_pairs(src_root, dst_root, ext=".jpg"):
@@ -2373,8 +2439,13 @@ if __name__ == "__main__":
     #                  hq_dir="/mnt/ssd/lyw/SISR_data/HR",
     #                  ext=".jpg")
 
-    # cp_img_pairs(src_root="/mnt/diske/lyw/EBB/trainset",
+    # add_prefix(dir_path="/mnt/diske/DPED dataset/dped/sony/training_data/HR",
+    #            prefix="sony")
+    # cp_img_pairs(src_root="/mnt/diske/DPED dataset/dped/sony/training_data",
     #              dst_root="/mnt/ssd/lyw/img2img_data/DGN")
+
+    filter_and_copy(src_dir="/mnt/diske/lyw/BiyingWallPaper_X2/LR",
+                    dst_dir="/mnt/diske/RandomSamples_2")
 
     # process_biying_to_DGN()
 
