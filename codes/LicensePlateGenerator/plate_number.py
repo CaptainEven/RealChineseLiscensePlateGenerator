@@ -214,7 +214,7 @@ def warp_img(img, radius):
     size = (w, h)
 
     # Build big image
-    big_img = np.zeros((h * 2, w * 2, 3), dtype=np.uint8)
+    big_img = np.zeros((h * 2, w * 2, 3), dtype=np.uint8)  # black background big img
     h_big, w_big = big_img.shape[:2]
     big_img[
     int(0.5 * size[1]):int(1.5 * size[1]),  # height range

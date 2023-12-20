@@ -25,8 +25,6 @@ from codes.data.data_sampler import DistIterSampler
 
 from codes.data.util import bgr2ycbcr
 
-os.environ['MASTER_ADDR'] = 'localhost'
-os.environ['MASTER_PORT'] = '6789'
 
 # torch.autograd.set_detect_anomaly(True)
 
@@ -37,6 +35,9 @@ def init_dist(backend="nccl", **kwargs):
     @param kwargs:
     @return:
     """
+    # os.environ['MASTER_ADDR'] = 'localhost'
+    # os.environ['MASTER_PORT'] = '6789'
+
     # if mp.get_start_method(allow_none=True) is None:
     if mp.get_start_method(allow_none=True) != "spawn":  # Return the name of start method used for starting processes
         mp.set_start_method("spawn", force=True)  ##'spawn' is the default on Windows
